@@ -2,153 +2,357 @@ import SwiftUI
 
 struct DashboardView: View {
     @StateObject private var viewModel = DashboardViewModel()
-    @StateObject private var goalViewModel = GoalViewModel()
+    @StateObject private var challengeViewModel = ChallengeViewModel()
+    @EnvironmentObject private var appState: AppState
 
     var body: some View {
         NavigationStack {
             ScrollView {
-                VStack(spacing: 24) {
-                    ProgressRingView(progress: viewModel.overallProgress, size: 120)
-                        .padding(.top, 16)
+                VStack(spacing: 20) {
+                    // Greeting
+                    HStack {
+                        VStack(alignment: .leading, spacing: 4) {
+                            Text(StringConstants.Dashboard.title)
+                                .font(.title)
+                                .fontWeight(.bold)
+                                .foregroundColor(AppColors.textPrimary)
 
-                    Text(StringConstants.Dashboard.yearProgress)
-                        .font(.headline)
-                        .foregroundColor(AppColors.textPrimary)
+                            if let challenge = challengeViewModel.currentChallenge {
+                                Text(StringConstants.Dashboard.currentChallenge)
+                                    .font(.subheadline)
+                                    .foregroundColor(AppColors.textSecondary)
+                            } else {
+                                Text(StringConstants.Dashboard.noActiveChallenge)
+                                    .font(.subheadline)
+                                    .foregroundColor(AppColors.textSecondary)
+                            }
+                        }
+                        Spacer()
+                    }
+                    .padding(.horizontal)
+                    .padding(.top, 16)
 
-                    HStack(spacing: 16) {
-                        DimensionProgressView(
-                            dimension: .career,
-                            progress: viewModel.careerProgress
+                    // Active Challenge Card
+                    if let challenge = challengeViewModel.currentChallenge {
+                        ChallengeCardView(
+                            challenge: challenge,
+                            todayTask: challengeViewModel.todayTask,
+                            isCompleting: challengeViewModel.isCompleting,
+                            onComplete: {
+                                Task { await challengeViewModel.completeTodayTask() }
+                            },
+                            onUnlock: {
+                                challengeViewModel.showingUnlock = true
+                            }
+                        )
+                        .padding(.horizontal)
+                    } else {
+                        NoChallengeCardView()
+                            .padding(.horizontal)
+                    }
+
+                    // Streak & Stats
+                    HStack(spacing: 12) {
+                        StatCardView(
+                            icon: "flame.fill",
+                            value: "\(viewModel.weeklyStreakDays)",
+                            label: StringConstants.Dashboard.streakDays,
+                            color: AppColors.accent
                         )
 
-                        DimensionProgressView(
-                            dimension: .relationship,
-                            progress: viewModel.relationshipProgress
+                        StatCardView(
+                            icon: "checkmark.circle.fill",
+                            value: "\(viewModel.weeklyTotalCheckIns)",
+                            label: StringConstants.Dashboard.totalCheckIns,
+                            color: AppColors.success
                         )
 
-                        DimensionProgressView(
-                            dimension: .growth,
-                            progress: viewModel.growthProgress
+                        StatCardView(
+                            icon: "chart.line.uptrend.xyaxis",
+                            value: String(format: "%.0f%%", viewModel.weeklyCompletionRate * 100),
+                            label: StringConstants.Dashboard.thisWeek,
+                            color: AppColors.primary
                         )
                     }
                     .padding(.horizontal)
 
-                    WeeklySummaryView(
-                        completionRate: viewModel.weeklyCompletionRate,
-                        totalCheckIns: viewModel.weeklyTotalCheckIns,
-                        streakDays: viewModel.weeklyStreakDays
-                    )
+                    // Dimension Progress
+                    HStack(spacing: 12) {
+                        MiniDimensionProgress(dimension: .career, progress: viewModel.careerProgress)
+                        MiniDimensionProgress(dimension: .relationship, progress: viewModel.relationshipProgress)
+                        MiniDimensionProgress(dimension: .growth, progress: viewModel.growthProgress)
+                    }
                     .padding(.horizontal)
 
+                    // Quick access
                     VStack(alignment: .leading, spacing: 12) {
-                        Text(StringConstants.Dashboard.todayTasks)
+                        Text("快速操作")
                             .font(.headline)
                             .foregroundColor(AppColors.textPrimary)
                             .padding(.horizontal)
 
-                        if viewModel.todayTasks.isEmpty {
-                            EmptyStateView(
-                                icon: "checkmark.circle",
-                                title: "今日無任務",
-                                message: "太棒了！今天沒有待完成的任務"
-                            )
-                            .frame(height: 150)
-                        } else {
-                            ForEach(viewModel.todayTasks.prefix(3)) { task in
-                                TodayTaskRow(task: task)
+                        HStack(spacing: 12) {
+                            QuickActionCard(icon: "bubble.left.and.bubble.right.fill", title: "AI教練", color: AppColors.primary) {
+                                // Navigate to AI Coach
+                            }
+                            QuickActionCard(icon: "calendar.badge.clock", title: "每週復盤", color: AppColors.accent) {
+                                // Navigate to Review
+                            }
+                            QuickActionCard(icon: "crown.fill", title: "升級", color: Color(hex: "FFD700")) {
+                                challengeViewModel.showingSubscription = true
                             }
                         }
-                    }
-
-                    if !viewModel.pendingTasks.isEmpty {
-                        VStack(alignment: .leading, spacing: 12) {
-                            Text(StringConstants.Dashboard.unfinishedTasks)
-                                .font(.headline)
-                                .foregroundColor(AppColors.textPrimary)
-                                .padding(.horizontal)
-
-                            ForEach(viewModel.pendingTasks.prefix(3)) { task in
-                                PendingTaskRow(task: task)
-                            }
-                        }
+                        .padding(.horizontal)
                     }
                 }
                 .padding(.bottom, 24)
             }
             .background(AppColors.background)
-            .navigationTitle(StringConstants.Dashboard.title)
             .onAppear {
                 viewModel.loadDashboardData()
-                goalViewModel.loadGoals()
+                challengeViewModel.loadChallenges()
             }
             .refreshable {
                 viewModel.loadDashboardData()
+                challengeViewModel.loadChallenges()
+            }
+            .sheet(isPresented: $challengeViewModel.showingUnlock) {
+                ChallengeUnlockView(viewModel: challengeViewModel)
+            }
+            .sheet(isPresented: $challengeViewModel.showingSubscription) {
+                SubscriptionView()
             }
         }
     }
 }
 
-struct TodayTaskRow: View {
-    let task: Task
+// MARK: - Challenge Card
+struct ChallengeCardView: View {
+    let challenge: Challenge
+    let todayTask: DailyChallengeTask?
+    let isCompleting: Bool
+    let onComplete: () -> Void
+    let onUnlock: () -> Void
 
     var body: some View {
-        HStack(spacing: 12) {
-            Image(systemName: task.priority == .high ? "exclamationmark.circle.fill" : "circle")
-                .foregroundColor(task.priority == .high ? AppColors.accent : AppColors.disabled)
-
-            VStack(alignment: .leading, spacing: 4) {
-                Text(task.title)
-                    .font(.body)
+        VStack(spacing: 16) {
+            // Challenge type header
+            HStack {
+                Image(systemName: challenge.phase == .sevenDayLaunch ? "bolt.fill" : "flame.fill")
+                    .foregroundColor(challenge.phase == .sevenDayLaunch ? AppColors.accent : AppColors.primary)
+                Text(challenge.phase == .sevenDayLaunch ? StringConstants.Dashboard.sevenDayLaunch : StringConstants.Dashboard.twentyOneDayChallenge)
+                    .font(.headline)
                     .foregroundColor(AppColors.textPrimary)
+                Spacer()
+                Text(String(format: StringConstants.Dashboard.dayFormat, "\(challenge.currentDayNumber)"))
+                    .font(.caption)
+                    .fontWeight(.semibold)
+                    .foregroundColor(.white)
+                    .padding(.horizontal, 10)
+                    .padding(.vertical, 4)
+                    .background(AppColors.primary)
+                    .cornerRadius(12)
+            }
 
-                if let deadline = task.deadline {
-                    Text(deadline.formatted(AppConstants.DateFormats.displayTime))
+            // Progress bar
+            ProgressView(value: challenge.progress)
+                .progressViewStyle(LinearProgressViewStyle(tint: challenge.phase == .sevenDayLaunch ? AppColors.accent : AppColors.primary))
+                .padding(.vertical, 4)
+
+            HStack {
+                Text("\(challenge.completedDays)/\(challenge.totalDays) 天")
+                    .font(.caption)
+                    .foregroundColor(AppColors.textSecondary)
+
+                Spacer()
+
+                if !challenge.isCompleted {
+                    Text(String(format: StringConstants.Dashboard.daysLeft, "\(challenge.totalDays - challenge.completedDays)"))
                         .font(.caption)
                         .foregroundColor(AppColors.textSecondary)
                 }
             }
 
-            Spacer()
+            // Today's task inline
+            if let task = todayTask {
+                Divider()
 
-            Text("\(task.currentStreak)天")
-                .font(.caption)
-                .foregroundColor(task.currentStreak > 0 ? AppColors.secondary : AppColors.textSecondary)
-                .padding(.horizontal, 8)
-                .padding(.vertical, 4)
-                .background(task.currentStreak > 0 ? AppColors.secondary.opacity(0.1) : AppColors.disabled.opacity(0.1))
-                .cornerRadius(4)
-        }
-        .padding()
-        .background(Color.white)
-        .cornerRadius(12)
-        .padding(.horizontal)
-    }
-}
+                HStack(spacing: 12) {
+                    VStack(alignment: .leading, spacing: 4) {
+                        Text(StringConstants.Dashboard.todayMission)
+                            .font(.caption)
+                            .foregroundColor(AppColors.textSecondary)
 
-struct PendingTaskRow: View {
-    let task: Task
+                        Text(task.title)
+                            .font(.subheadline)
+                            .fontWeight(.medium)
+                            .foregroundColor(AppColors.textPrimary)
+                    }
 
-    var body: some View {
-        HStack(spacing: 12) {
-            VStack(alignment: .leading, spacing: 4) {
-                Text(task.title)
-                    .font(.body)
-                    .foregroundColor(AppColors.textPrimary)
+                    Spacer()
 
-                Text(task.status.displayName)
-                    .font(.caption)
-                    .foregroundColor(AppColors.textSecondary)
+                    if task.isCompleted {
+                        Image(systemName: "checkmark.circle.fill")
+                            .font(.title2)
+                            .foregroundColor(AppColors.success)
+                    } else {
+                        Button(action: onComplete) {
+                            if isCompleting {
+                                ProgressView()
+                                    .progressViewStyle(CircularProgressViewStyle(tint: .white))
+                                    .frame(width: 36, height: 36)
+                                    .background(AppColors.primary)
+                                    .cornerRadius(18)
+                            } else {
+                                Image(systemName: "checkmark")
+                                    .font(.body)
+                                    .foregroundColor(.white)
+                                    .frame(width: 36, height: 36)
+                                    .background(AppColors.primary)
+                                    .cornerRadius(18)
+                            }
+                        }
+                        .disabled(isCompleting)
+                    }
+                }
             }
 
-            Spacer()
-
-            Image(systemName: "chevron.right")
-                .foregroundColor(AppColors.disabled)
+            // Unlock button for completed 7-day
+            if challenge.isCompleted && challenge.totalDays == AppConstants.Challenge.launchDays {
+                Button(action: onUnlock) {
+                    HStack {
+                        Image(systemName: "lock.open.fill")
+                        Text(StringConstants.Onboarding.startChallengeButton)
+                    }
+                    .font(.subheadline)
+                    .fontWeight(.semibold)
+                    .foregroundColor(.white)
+                    .frame(maxWidth: .infinity)
+                    .padding(.vertical, 10)
+                    .background(AppColors.accent)
+                    .cornerRadius(10)
+                }
+            }
         }
         .padding()
         .background(Color.white)
-        .cornerRadius(12)
-        .padding(.horizontal)
+        .cornerRadius(16)
+        .shadow(color: Color.black.opacity(0.06), radius: 8, x: 0, y: 4)
     }
 }
 
+// MARK: - No Challenge Card
+struct NoChallengeCardView: View {
+    var body: some View {
+        VStack(spacing: 16) {
+            Image(systemName: "sparkles")
+                .font(.system(size: 40))
+                .foregroundColor(AppColors.primary.opacity(0.5))
+
+            Text(StringConstants.Dashboard.noActiveChallenge)
+                .font(.subheadline)
+                .foregroundColor(AppColors.textSecondary)
+
+            Button(action: {}) {
+                Text(StringConstants.Dashboard.startNewChallenge)
+                    .font(.subheadline)
+                    .fontWeight(.semibold)
+                    .foregroundColor(.white)
+                    .padding(.horizontal, 20)
+                    .padding(.vertical, 8)
+                    .background(AppColors.primary)
+                    .cornerRadius(20)
+            }
+        }
+        .padding()
+        .frame(maxWidth: .infinity)
+        .background(Color.white)
+        .cornerRadius(16)
+        .shadow(color: Color.black.opacity(0.04), radius: 4, x: 0, y: 2)
+    }
+}
+
+// MARK: - Stat Card
+struct StatCardView: View {
+    let icon: String
+    let value: String
+    let label: String
+    let color: Color
+
+    var body: some View {
+        VStack(spacing: 8) {
+            Image(systemName: icon)
+                .font(.title3)
+                .foregroundColor(color)
+
+            Text(value)
+                .font(.title2)
+                .fontWeight(.bold)
+                .foregroundColor(AppColors.textPrimary)
+
+            Text(label)
+                .font(.caption2)
+                .foregroundColor(AppColors.textSecondary)
+        }
+        .frame(maxWidth: .infinity)
+        .padding()
+        .background(Color.white)
+        .cornerRadius(12)
+    }
+}
+
+// MARK: - Mini Dimension Progress
+struct MiniDimensionProgress: View {
+    let dimension: GoalDimension
+    let progress: Double
+
+    var body: some View {
+        VStack(spacing: 8) {
+            Image(systemName: dimension.icon)
+                .font(.title3)
+                .foregroundColor(Color(hex: dimension.color))
+
+            Text(dimension.displayName)
+                .font(.caption)
+                .foregroundColor(AppColors.textSecondary)
+
+            ProgressView(value: progress)
+                .progressViewStyle(LinearProgressViewStyle(tint: Color(hex: dimension.color)))
+
+            Text(String(format: "%.0f%%", progress * 100))
+                .font(.caption2)
+                .fontWeight(.semibold)
+                .foregroundColor(AppColors.textPrimary)
+        }
+        .padding()
+        .frame(maxWidth: .infinity)
+        .background(Color.white)
+        .cornerRadius(12)
+    }
+}
+
+// MARK: - Quick Action Card
+struct QuickActionCard: View {
+    let icon: String
+    let title: String
+    let color: Color
+    let action: () -> Void
+
+    var body: some View {
+        Button(action: action) {
+            VStack(spacing: 8) {
+                Image(systemName: icon)
+                    .font(.title2)
+                    .foregroundColor(color)
+
+                Text(title)
+                    .font(.caption)
+                    .foregroundColor(AppColors.textPrimary)
+            }
+            .frame(maxWidth: .infinity)
+            .padding()
+            .background(Color.white)
+            .cornerRadius(12)
+        }
+    }
+}

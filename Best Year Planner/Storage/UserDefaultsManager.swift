@@ -56,6 +56,40 @@ final class UserDefaultsManager {
         set { defaults.set(newValue.rawValue, forKey: AppConstants.UserDefaultsKeys.appLanguage) }
     }
 
+    // MARK: - Subscription State
+    var subscriptionState: SubscriptionState {
+        get {
+            guard let data = defaults.data(forKey: AppConstants.UserDefaultsKeys.subscriptionTier),
+                  let state = try? JSONDecoder().decode(SubscriptionState.self, from: data) else {
+                return SubscriptionState()
+            }
+            return state
+        }
+        set {
+            if let data = try? JSONEncoder().encode(newValue) {
+                defaults.set(data, forKey: AppConstants.UserDefaultsKeys.subscriptionTier)
+            }
+        }
+    }
+
+    // MARK: - Onboarding Answers
+    var onboardingAnswers: OnboardingAnswers? {
+        get {
+            guard let data = defaults.data(forKey: AppConstants.UserDefaultsKeys.onboardingAnswers),
+                  let answers = try? JSONDecoder().decode(OnboardingAnswers.self, from: data) else {
+                return nil
+            }
+            return answers
+        }
+        set {
+            if let data = try? JSONEncoder().encode(newValue) {
+                defaults.set(data, forKey: AppConstants.UserDefaultsKeys.onboardingAnswers)
+            } else {
+                defaults.removeObject(forKey: AppConstants.UserDefaultsKeys.onboardingAnswers)
+            }
+        }
+    }
+
     var currentUserId: String? {
         get { KeychainManager.shared.readString(forKey: AppConstants.KeychainKeys.userId) }
         set {

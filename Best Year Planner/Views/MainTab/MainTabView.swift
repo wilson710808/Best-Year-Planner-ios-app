@@ -3,43 +3,48 @@ import SwiftUI
 struct MainTabView: View {
     @State private var selectedTab = 0
     @EnvironmentObject private var appState: AppState
-    @StateObject private var moduleManager = ModuleManager.shared
-
-    private var enabledModules: [any AppModule] {
-        moduleManager.getEnabledModules()
-    }
 
     var body: some View {
         TabView(selection: $selectedTab) {
-            ForEach(Array(enabledModules.enumerated()), id: \.element.id) { index, module in
-                tabContent(for: module)
-                    .tabItem {
-                        Label(module.name, systemImage: module.icon)
-                    }
-                    .tag(index)
+            // Tab 1: 首頁 (挑戰)
+            NavigationStack {
+                DashboardView()
             }
+            .tabItem {
+                Label("首頁", systemImage: "house.fill")
+            }
+            .tag(0)
+
+            // Tab 2: 打卡
+            NavigationStack {
+                CheckInView()
+            }
+            .tabItem {
+                Label("打卡", systemImage: "checkmark.circle.fill")
+            }
+            .tag(1)
+
+            // Tab 3: AI教練
+            NavigationStack {
+                AICoachView()
+            }
+            .tabItem {
+                Label("AI教練", systemImage: "bubble.left.and.bubble.right.fill")
+            }
+            .tag(2)
+
+            // Tab 4: 我的
+            NavigationStack {
+                SettingsView()
+            }
+            .tabItem {
+                Label("我的", systemImage: "person.fill")
+            }
+            .tag(3)
         }
         .tint(AppColors.primary)
         .onAppear {
             configureTabBarAppearance()
-        }
-    }
-
-    @ViewBuilder
-    private func tabContent(for module: any AppModule) -> some View {
-        switch module.id {
-        case "dashboard":
-            DashboardView()
-        case "goals":
-            GoalsListView()
-        case "checkin":
-            CheckInView()
-        case "aicoach":
-            AICoachView()
-        case "community":
-            CommunityView()
-        default:
-            EmptyView()
         }
     }
 
@@ -52,4 +57,3 @@ struct MainTabView: View {
         UITabBar.appearance().scrollEdgeAppearance = appearance
     }
 }
-

@@ -36,6 +36,8 @@ enum GoalLevel: String, Codable, CaseIterable {
     case monthly = "monthly"
     case weekly = "weekly"
     case daily = "daily"
+    case sevenDayLaunch = "7day_launch"
+    case twentyOneDayChallenge = "21day_challenge"
 
     var displayName: String {
         switch self {
@@ -44,6 +46,8 @@ enum GoalLevel: String, Codable, CaseIterable {
         case .monthly: return "月度"
         case .weekly: return "每週"
         case .daily: return "每日"
+        case .sevenDayLaunch: return "7天啟動"
+        case .twentyOneDayChallenge: return "21天挑戰"
         }
     }
 }
@@ -104,8 +108,8 @@ struct Goal: Codable, Identifiable, Equatable {
         id: String = UUID().uuidString,
         title: String,
         description: String = "",
-        dimension: GoalDimension,
-        level: GoalLevel,
+        dimension: GoalDimension = .growth,
+        level: GoalLevel = .yearly,
         parentGoalId: String? = nil,
         priority: Priority = .medium,
         status: GoalStatus = .active,

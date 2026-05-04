@@ -26,17 +26,15 @@ final class ModuleManager: ObservableObject {
     }
 
     private func registerDefaultModules() {
-        let dashboard = DashboardModule()
-        let goals = GoalsModule()
+        let home = HomeModule()
         let checkIn = CheckInModule()
         let aiCoach = AICoachModule()
-        let community = CommunityModule()
+        let settings = SettingsModule()
 
-        _modules[dashboard.id] = dashboard
-        _modules[goals.id] = goals
+        _modules[home.id] = home
         _modules[checkIn.id] = checkIn
         _modules[aiCoach.id] = aiCoach
-        _modules[community.id] = community
+        _modules[settings.id] = settings
 
         for (id, _) in _modules {
             loadModuleState(id)
@@ -103,9 +101,9 @@ final class ModuleManager: ObservableObject {
     }
 }
 
-class DashboardModule: AppModule {
-    let id = "dashboard"
-    var name = "儀表板"
+class HomeModule: AppModule {
+    let id = "home"
+    var name = "首頁"
     var icon = "house.fill"
     var isEnabled: Bool = true
     let order = 0
@@ -115,24 +113,12 @@ class DashboardModule: AppModule {
     func disable() { isEnabled = false }
 }
 
-class GoalsModule: AppModule {
-    let id = "goals"
-    var name = "目標任務"
-    var icon = "target"
-    var isEnabled: Bool = true
-    let order = 1
-
-    func configure() {}
-    func enable() { isEnabled = true }
-    func disable() { isEnabled = false }
-}
-
 class CheckInModule: AppModule {
     let id = "checkin"
-    var name = "打卡中心"
+    var name = "打卡"
     var icon = "checkmark.circle.fill"
     var isEnabled: Bool = true
-    let order = 2
+    let order = 1
 
     func configure() {}
     func enable() { isEnabled = true }
@@ -144,19 +130,19 @@ class AICoachModule: AppModule {
     var name = "AI教練"
     var icon = "bubble.left.and.bubble.right.fill"
     var isEnabled: Bool = true
-    let order = 3
+    let order = 2
 
     func configure() {}
     func enable() { isEnabled = true }
     func disable() { isEnabled = false }
 }
 
-class CommunityModule: AppModule {
-    let id = "community"
-    var name = "社群"
-    var icon = "person.3.fill"
+class SettingsModule: AppModule {
+    let id = "settings"
+    var name = "我的"
+    var icon = "person.fill"
     var isEnabled: Bool = true
-    let order = 4
+    let order = 3
 
     func configure() {}
     func enable() { isEnabled = true }

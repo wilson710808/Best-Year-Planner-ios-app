@@ -607,6 +607,130 @@ final class AIService {
             return "歡迎 \(nickname) 加入我們的行列！每天進步一點點，你也可以做到的！🌟"
         }
     }
+
+    // MARK: - Challenge Generation
+
+    /// Generate a 7-day launch plan based on user's 3 answers
+    func generateSevenDayLaunchPlan(answers: [String], userId: String) async -> SevenDayLaunchPlan? {
+        let prompt = """
+        用戶回答了三個問題：
+        1. 今年最想提升的是：\(answers.count > 0 ? answers[0] : "")
+        2. 願意從小事開始：\(answers.count > 1 ? answers[1] : "")
+        3. 一年後想成為：\(answers.count > 2 ? answers[2] : "")
+
+        請根據這些回答，為用戶設計一個7天啟動計畫，每天一個5分鐘可完成的小任務，目標是讓用戶體驗到「我真的可以堅持」。
+
+        請嚴格按照以下JSON格式返回，不要包含其他文字：
+        {"title":"計畫標題","tasks":[{"day":1,"title":"任務標題","description":"任務描述","tip":"AI小建議"}]}
+        """
+
+        let response = await queryAIGateway(userId: userId, query: prompt)
+        return parseLaunchPlanFromResponse(response)
+    }
+
+    /// Generate a 21-day challenge based on completed 7-day launch
+    func generateTwentyOneDayChallenge(goalId: String, completedLaunch: Challenge, userId: String) async -> [DailyChallengeTask]? {
+        let completedTasks = completedLaunch.dailyTasks.map { "第\($0.dayNumber)天: \($0.title) - \($0.isCompleted ? "✅" : "❌")" }.joined(separator: "\n")
+
+        let prompt = """
+        用戶已經完成了7天啟動計畫，以下是每天的完成情況：
+        \(completedTasks)
+
+        請根據這個基礎，為用戶設計一個21天習慣養成計畫，每天一個任務，時間可以從5-15分鐘遞增。
+
+        請嚴格按照以下JSON格式返回，不要包含其他文字：
+        {"title":"計畫標題","tasks":[{"day":1,"title":"任務標題","description":"任務描述","tip":"AI小建議"}]}
+        """
+
+        let response = await queryAIGateway(userId: userId, query: prompt)
+        return parseChallengeTasksFromResponse(response, challengeId: goalId)
+    }
+
+    /// Generate a daily AI tip for a specific challenge day
+    func generateDailyTip(challengeId: String, dayNumber: Int, previousDays: [DailyChallengeTask], userId: String) async -> String {
+        let completedCount = previousDays.filter { $0.isCompleted }.count
+        let prompt = "用戶正在進行\(dayNumber <= 7 ? "7天啟動" : "21天挑戰")第\(dayNumber)天，已連續完成\(completedCount)天。請給一句簡短鼓勵（20字以內），幫助用戶堅持下去。"
+        return await queryAIGateway(userId: userId, query: prompt)
+    }
+
+    // MARK: - JSON Parsing Helpers
+
+    private func parseLaunchPlanFromResponse(_ response: String) -> SevenDayLaunchPlan? {
+        var jsonString = extractJSON(from: response)
+
+        guard let jsonData = jsonString.data(using: .utf8),
+              let json = try? JSONSerialization.jsonObject(with: jsonData) as? [String: Any],
+              let title = json["title"] as? String,
+              let tasksArray = json["tasks"] as? [[String: Any]] else {
+            return nil
+        }
+
+        var tasks: [DailyChallengeTask] = []
+        for taskDict in tasksArray {
+            let day = taskDict["day"] as? Int ?? (tasks.count + 1)
+            let title = taskDict["title"] as? String ?? "第\(day)天任務"
+            let desc = taskDict["description"] as? String ?? ""
+            let tip = taskDict["tip"] as? String
+
+            tasks.append(DailyChallengeTask(
+                dayNumber: day,
+                title: title,
+                description: desc,
+                estimatedMinutes: AppConstants.Challenge.defaultTaskMinutes,
+                aiTip: tip
+            ))
+        }
+
+        return SevenDayLaunchPlan(title: title, tasks: tasks)
+    }
+
+    private func parseChallengeTasksFromResponse(_ response: String, challengeId: String) -> [DailyChallengeTask]? {
+        var jsonString = extractJSON(from: response)
+
+        guard let jsonData = jsonString.data(using: .utf8),
+              let json = try? JSONSerialization.jsonObject(with: jsonData) as? [String: Any],
+              let tasksArray = json["tasks"] as? [[String: Any]] else {
+            return nil
+        }
+
+        var tasks: [DailyChallengeTask] = []
+        for taskDict in tasksArray {
+            let day = taskDict["day"] as? Int ?? (tasks.count + 1)
+            let title = taskDict["title"] as? String ?? "第\(day)天任務"
+            let desc = taskDict["description"] as? String ?? ""
+            let tip = taskDict["tip"] as? String
+
+            tasks.append(DailyChallengeTask(
+                challengeId: challengeId,
+                dayNumber: day,
+                title: title,
+                description: desc,
+                estimatedMinutes: min(5 + (day / 3) * 2, 15),
+                aiTip: tip
+            ))
+        }
+
+        return tasks
+    }
+
+    private func extractJSON(from response: String) -> String {
+        var jsonString = response
+
+        // Try to extract JSON from markdown code block
+        if let range = response.range(of: "```json") {
+            let start = response.index(range.upperBound, offsetBy: 0)
+            if let endRange = response[start...].range(of: "```") {
+                jsonString = String(response[start..<endRange.lowerBound])
+            }
+        } else if let range = response.range(of: "```") {
+            let start = response.index(range.upperBound, offsetBy: 0)
+            if let endRange = response[start...].range(of: "```") {
+                jsonString = String(response[start..<endRange.lowerBound])
+            }
+        }
+
+        return jsonString.trimmingCharacters(in: .whitespacesAndNewlines)
+    }
 }
 
 

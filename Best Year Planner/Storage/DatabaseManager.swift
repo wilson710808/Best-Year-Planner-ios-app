@@ -32,6 +32,8 @@ final class DatabaseManager {
         createConversationsTable()
         createReviewsTable()
         createCommunityTables()
+        createChallengesTable()
+        createDailyChallengeTasksTable()
     }
 
     private func createUsersTable() {
@@ -788,6 +790,219 @@ final class DatabaseManager {
             nextWeekFocus: nextWeekFocus,
             aiSuggestions: aiSuggestions,
             createdAt: createdAt
+        )
+    }
+
+    // MARK: - Challenges
+
+    private func createChallengesTable() {
+        let createTable = """
+            CREATE TABLE IF NOT EXISTS challenges (
+                id TEXT PRIMARY KEY,
+                goal_id TEXT NOT NULL,
+                phase TEXT NOT NULL,
+                total_days INTEGER NOT NULL,
+                completed_days INTEGER DEFAULT 0,
+                start_date REAL NOT NULL,
+                is_unlocked INTEGER DEFAULT 0,
+                created_at REAL NOT NULL,
+                updated_at REAL NOT NULL,
+                FOREIGN KEY (goal_id) REFERENCES goals(id)
+            );
+        """
+        executeSQL(createTable)
+    }
+
+    private func createDailyChallengeTasksTable() {
+        let createTable = """
+            CREATE TABLE IF NOT EXISTS daily_challenge_tasks (
+                id TEXT PRIMARY KEY,
+                challenge_id TEXT NOT NULL,
+                day_number INTEGER NOT NULL,
+                title TEXT NOT NULL,
+                description TEXT NOT NULL,
+                estimated_minutes INTEGER DEFAULT 5,
+                is_completed INTEGER DEFAULT 0,
+                completed_at REAL,
+                ai_tip TEXT,
+                FOREIGN KEY (challenge_id) REFERENCES challenges(id)
+            );
+        """
+        executeSQL(createTable)
+    }
+
+    func saveChallenge(_ challenge: Challenge) -> Bool {
+        // Save challenge record
+        let sql = """
+            INSERT OR REPLACE INTO challenges (id, goal_id, phase, total_days, completed_days, start_date, is_unlocked, created_at, updated_at)
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?);
+        """
+        var statement: OpaquePointer?
+
+        guard sqlite3_prepare_v2(db, sql, -1, &statement, nil) == SQLITE_OK else { return false }
+        defer { sqlite3_finalize(statement) }
+
+        sqlite3_bind_text(statement, 1, (challenge.id as NSString).utf8String, -1, nil)
+        sqlite3_bind_text(statement, 2, (challenge.goalId as NSString).utf8String, -1, nil)
+        sqlite3_bind_text(statement, 3, (challenge.phase.rawValue as NSString).utf8String, -1, nil)
+        sqlite3_bind_int(statement, 4, Int32(challenge.totalDays))
+        sqlite3_bind_int(statement, 5, Int32(challenge.completedDays))
+        sqlite3_bind_double(statement, 6, challenge.startDate.timeIntervalSince1970)
+        sqlite3_bind_int(statement, 7, challenge.isUnlocked ? 1 : 0)
+        sqlite3_bind_double(statement, 8, challenge.createdAt.timeIntervalSince1970)
+        sqlite3_bind_double(statement, 9, challenge.updatedAt.timeIntervalSince1970)
+
+        guard sqlite3_step(statement) == SQLITE_DONE else { return false }
+
+        // Save daily tasks
+        for task in challenge.dailyTasks {
+            _ = saveDailyChallengeTask(task)
+        }
+
+        return true
+    }
+
+    func saveDailyChallengeTask(_ task: DailyChallengeTask) -> Bool {
+        let sql = """
+            INSERT OR REPLACE INTO daily_challenge_tasks (id, challenge_id, day_number, title, description, estimated_minutes, is_completed, completed_at, ai_tip)
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?);
+        """
+        var statement: OpaquePointer?
+
+        guard sqlite3_prepare_v2(db, sql, -1, &statement, nil) == SQLITE_OK else { return false }
+        defer { sqlite3_finalize(statement) }
+
+        sqlite3_bind_text(statement, 1, (task.id as NSString).utf8String, -1, nil)
+        sqlite3_bind_text(statement, 2, (task.challengeId as NSString).utf8String, -1, nil)
+        sqlite3_bind_int(statement, 3, Int32(task.dayNumber))
+        sqlite3_bind_text(statement, 4, (task.title as NSString).utf8String, -1, nil)
+        sqlite3_bind_text(statement, 5, (task.description as NSString).utf8String, -1, nil)
+        sqlite3_bind_int(statement, 6, Int32(task.estimatedMinutes))
+        sqlite3_bind_int(statement, 7, task.isCompleted ? 1 : 0)
+
+        if let completedAt = task.completedAt {
+            sqlite3_bind_double(statement, 8, completedAt.timeIntervalSince1970)
+        } else {
+            sqlite3_bind_null(statement, 8)
+        }
+
+        if let tip = task.aiTip {
+            sqlite3_bind_text(statement, 9, (tip as NSString).utf8String, -1, nil)
+        } else {
+            sqlite3_bind_null(statement, 9)
+        }
+
+        return sqlite3_step(statement) == SQLITE_DONE
+    }
+
+    func getChallenge(byId id: String) -> Challenge? {
+        let sql = "SELECT * FROM challenges WHERE id = ?;"
+        var statement: OpaquePointer?
+
+        guard sqlite3_prepare_v2(db, sql, -1, &statement, nil) == SQLITE_OK else { return nil }
+        defer { sqlite3_finalize(statement) }
+
+        sqlite3_bind_text(statement, 1, (id as NSString).utf8String, -1, nil)
+
+        guard sqlite3_step(statement) == SQLITE_ROW else { return nil }
+
+        return challengeFromStatement(statement)
+    }
+
+    func getAllChallenges() -> [Challenge] {
+        let sql = "SELECT * FROM challenges ORDER BY created_at DESC;"
+        var statement: OpaquePointer?
+        var challenges: [Challenge] = []
+
+        guard sqlite3_prepare_v2(db, sql, -1, &statement, nil) == SQLITE_OK else { return [] }
+        defer { sqlite3_finalize(statement) }
+
+        while sqlite3_step(statement) == SQLITE_ROW {
+            if let challenge = challengeFromStatement(statement) {
+                challenges.append(challenge)
+            }
+        }
+
+        return challenges
+    }
+
+    private func challengeFromStatement(_ statement: OpaquePointer?) -> Challenge? {
+        guard let statement = statement else { return nil }
+
+        let id = String(cString: sqlite3_column_text(statement, 0))
+        let goalId = String(cString: sqlite3_column_text(statement, 1))
+        let phaseRaw = String(cString: sqlite3_column_text(statement, 2))
+        let totalDays = Int(sqlite3_column_int(statement, 3))
+        let completedDays = Int(sqlite3_column_int(statement, 4))
+        let startDate = Date(timeIntervalSince1970: sqlite3_column_double(statement, 5))
+        let isUnlocked = sqlite3_column_int(statement, 6) == 1
+        let createdAt = Date(timeIntervalSince1970: sqlite3_column_double(statement, 7))
+        let updatedAt = Date(timeIntervalSince1970: sqlite3_column_double(statement, 8))
+
+        guard let phase = ChallengePhase(rawValue: phaseRaw) else { return nil }
+
+        // Load daily tasks for this challenge
+        let dailyTasks = getDailyChallengeTasks(forChallengeId: id)
+
+        return Challenge(
+            id: id,
+            goalId: goalId,
+            phase: phase,
+            totalDays: totalDays,
+            completedDays: completedDays,
+            startDate: startDate,
+            isUnlocked: isUnlocked,
+            dailyTasks: dailyTasks,
+            createdAt: createdAt,
+            updatedAt: updatedAt
+        )
+    }
+
+    private func getDailyChallengeTasks(forChallengeId challengeId: String) -> [DailyChallengeTask] {
+        let sql = "SELECT * FROM daily_challenge_tasks WHERE challenge_id = ? ORDER BY day_number ASC;"
+        var statement: OpaquePointer?
+        var tasks: [DailyChallengeTask] = []
+
+        guard sqlite3_prepare_v2(db, sql, -1, &statement, nil) == SQLITE_OK else { return [] }
+        defer { sqlite3_finalize(statement) }
+
+        sqlite3_bind_text(statement, 1, (challengeId as NSString).utf8String, -1, nil)
+
+        while sqlite3_step(statement) == SQLITE_ROW {
+            if let task = dailyChallengeTaskFromStatement(statement) {
+                tasks.append(task)
+            }
+        }
+
+        return tasks
+    }
+
+    private func dailyChallengeTaskFromStatement(_ statement: OpaquePointer?) -> DailyChallengeTask? {
+        guard let statement = statement else { return nil }
+
+        let id = String(cString: sqlite3_column_text(statement, 0))
+        let challengeId = String(cString: sqlite3_column_text(statement, 1))
+        let dayNumber = Int(sqlite3_column_int(statement, 2))
+        let title = String(cString: sqlite3_column_text(statement, 3))
+        let description = String(cString: sqlite3_column_text(statement, 4))
+        let estimatedMinutes = Int(sqlite3_column_int(statement, 5))
+        let isCompleted = sqlite3_column_int(statement, 6) == 1
+
+        let completedAt: Date? = sqlite3_column_type(statement, 7) != SQLITE_NULL ?
+            Date(timeIntervalSince1970: sqlite3_column_double(statement, 7)) : nil
+
+        let aiTip: String? = sqlite3_column_text(statement, 8).map { String(cString: $0) }
+
+        return DailyChallengeTask(
+            id: id,
+            challengeId: challengeId,
+            dayNumber: dayNumber,
+            title: title,
+            description: description,
+            estimatedMinutes: estimatedMinutes,
+            isCompleted: isCompleted,
+            completedAt: completedAt,
+            aiTip: aiTip
         )
     }
 }

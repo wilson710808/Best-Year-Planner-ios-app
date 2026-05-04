@@ -1,7 +1,7 @@
 import Foundation
 
 enum AppConstants {
-    static let appName = "Best Year Planner"
+    static let appName = "最好的一年"
     static let bundleId = "com.bestyear.planner"
 
     enum UserDefaultsKeys {
@@ -13,6 +13,9 @@ enum AppConstants {
         static let dailyReminderTime = "dailyReminderTime"
         static let weeklyReviewReminderDay = "weeklyReviewReminderDay"
         static let appLanguage = "appLanguage"
+        static let subscriptionTier = "subscriptionTier"
+        static let activeChallengeCount = "activeChallengeCount"
+        static let onboardingAnswers = "onboardingAnswers"
     }
 
     enum KeychainKeys {
@@ -29,10 +32,16 @@ enum AppConstants {
     }
 
     enum AI {
-        // AI Gateway 配置
         static let gatewayBaseURL = "https://www.herelai.fun"
         static let gatewayEndpoint = "/ws/05-ai-gateway/api/query"
         static let appId = "bestyearplanner"
+    }
+
+    enum Challenge {
+        static let launchDays = 7
+        static let challengeDays = 21
+        static let maxFreeChallenges = 3
+        static let defaultTaskMinutes = 5
     }
 
     enum DateFormats {
@@ -50,5 +59,6 @@ enum AppConstants {
         static let monthlyReview = "monthlyReview"
         static let yearlyReview = "yearlyReview"
         static let streakReminder = "streakReminder"
+        static let challengeDayReminder = "challengeDayReminder"
     }
 }

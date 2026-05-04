@@ -1,59 +1,119 @@
-# Best Year Planner - 開發狀態
+# DEV_STATUS.md — Best Year Planner 開發狀態
 
-> 最後更新：2026-05-04
+## 版本: v2.0 (7天啟動·21天改變)
 
-## 📊 功能完成度
+### 最近更新: 2026-05-04
 
-| 模組 | 狀態 | 完成度 | 備註 |
-|------|------|--------|------|
-| 認證系統 | ✅ | 100% | 登入/註冊/自動登入/Keychain |
-| 新手引導 | ✅ | 100% | 三維度問卷 + AI 目標生成 |
-| 目標管理 | ✅ | 95% | CRUD + 維度篩選 + 階層拆解 |
-| 打卡系統 | ✅ | 90% | 打卡/連續天數/日曆檢視 |
-| 儀表板 | ✅ | 100% | 進度圓環/維度進度/週摘要 |
-| AI 教練 | ✅ | 90% | Gateway 整合 + 對話功能 |
-| AI 夥伴 | ✅ | 85% | 聊天室 + 歡迎訊息 |
-| 社群 | ⚠️ | 60% | 本地資料結構完成，後端尚未接入 |
-| 復盤 | ✅ | 80% | 週/月/年度復盤 + AI 建議 |
-| 設置 | ✅ | 90% | 個人資料/通知/主題/數據管理 |
-| AI Gateway | ✅ | 100% | herelai.fun Gateway 已整合 |
+---
 
-## 🔧 本次修改 (2026-05-04)
+## ✅ 已完成功能
 
-### 已完成
-1. **AppConstants.swift** — 移除舊的豆包/通義千問 API 配置，改為 AI Gateway 配置
-2. **新增 12 個缺失 View 文件**：
-   - `DimensionProgressView.swift` — 儀表板維度進度條
-   - `WeeklySummaryView.swift` — 週摘要卡片
-   - `GoalDetailView.swift` — 目標詳情（含編輯/刪除/暫停）
-   - `AddGoalView.swift` — 新增目標表單
-   - `TaskListView.swift` — 任務列表
-   - `CheckInCalendarView.swift` — 打卡日曆
-   - `WeeklyReviewContainerView.swift` — 週復盤
-   - `MonthlyReviewView.swift` — 月度復盤
-   - `GroupListView.swift` — 社群揪團列表（含搜尋/篩選）
-   - `LeaderboardView.swift` — 排行榜（前三名高亮）
-   - `NotificationSettingsView.swift` — 通知設定
-   - `ProfileEditView.swift` — 已內嵌於 SettingsView.swift
-3. **GoalEnhancement.swift** — 新增限制性信念模型
+### 核心模型
+- [x] Challenge.swift — 7天啟動 + 21天挑戰模型
+- [x] Subscription.swift — 免費/高級訂閱體系
+- [x] Goal.swift — 新增 sevenDayLaunch / twentyOneDayChallenge 層級
+- [x] Questionnaire.swift — 簡化為3個問題 + OnboardingAnswers
 
-### 架構改進
-- AI 統一透過 `AIService.queryAIGateway()` 呼叫
-- Gateway endpoint: `https://www.herelai.fun/ws/05-ai-gateway/api/query`
-- app_id: `bestyearplanner`
-- 錯誤處理完善：網路超時/連線失敗/解析錯誤均有 fallback
+### 常量 & 文案
+- [x] AppConstants.swift — 新增 Challenge 常量、訂閱相關鍵值
+- [x] StringConstants.swift — 全面更新產品文案（「從相信自己開始」）
+
+### 數據層
+- [x] DatabaseManager.swift — 新增 challenges / daily_challenge_tasks 表 + CRUD
+- [x] UserDefaultsManager.swift — 新增 subscriptionState / onboardingAnswers
+
+### 服務層
+- [x] AIService.swift — 新增 generateSevenDayLaunchPlan / generateTwentyOneDayChallenge / generateDailyTip
+
+### ViewModel 層
+- [x] OnboardingViewModel.swift — 3問題 → AI生成7天計畫（含 fallback）
+- [x] ChallengeViewModel.swift — 挑戰管理、打卡、解鎖21天
+- [x] AppState.swift — 訂閱狀態管理、挑戰計數
+
+### Views
+- [x] OnboardingContainerView.swift — 全新4步引導流程
+- [x] SevenDayLaunchView.swift — 7天啟動視圖（進度圈+每日任務）
+- [x] TwentyOneDayChallengeView.swift — 21天挑戰視圖（週進度+日曆格）
+- [x] ChallengeUnlockView.swift — 完成七天後解鎖慶祝頁
+- [x] SubscriptionView.swift — 訂閱/升級頁面
+- [x] DashboardView.swift — 重新設計（挑戰卡片+統計+快速操作）
+- [x] MainTabView.swift — 簡化為4個Tab（首頁/打卡/AI教練/我的）
+
+### 模組管理
+- [x] ModuleManager.swift — 更新為4模組（首頁/打卡/AI教練/我的）
+
+---
 
 ## ⚠️ 待完成
 
-1. **社群後端接入** — 目前社群功能僅本地存儲，需要後端 API 支持
-2. **Xcode 項目配置** — 新增的 .swift 文件需要加入 Xcode project
-3. **Apple Sign-In** — 預留接口，尚未實作
-4. **數據雲端同步** — 目前僅本地存儲
-5. **深色模式** — AppColors 已定義 dark 色值，但尚未實作切換邏輯
-6. **推送通知** — 本地通知已實作，遠端推送待接入 APNs
+### 功能
+- [ ] StoreKit 真實 IAP 接入（目前升級按鈕為模擬）
+- [ ] 本地通知提醒（每日挑戰任務提醒）
+- [ ] Widget 支持（iOS 鎖屏顯示今日任務）
+- [ ] Dark Mode 完善
 
-## 📝 技術債
+### 技術
+- [ ] Xcode 項目配置（新文件加入 .xcodeproj）
+- [ ] 單元測試
+- [ ] UI 測試
+- [ ] App Store 截圖和描述
 
-- `CheckInView` 中的 SummaryCardView 連續天數計算邏輯有 bug（reduce 不正確）
-- `CommunityService` 的 loadGroups/loadPosts 回傳空陣列（未接入真實數據）
-- `GoalEnhancement.swift` 的限制性信念功能尚未在 UI 中使用
+### AI 優化
+- [ ] AI 生成7天計畫的 prompt 優化
+- [ ] AI 生成21天挑戰的任務多樣化
+- [ ] 每日 AI tip 快取避免重複請求
+
+---
+
+## 🔧 技術規格
+
+| 項目 | 規格 |
+|------|------|
+| 架構 | MVVM + SwiftUI |
+| 最低版本 | iOS 16.0+ |
+| Bundle ID | com.bestyearplanner |
+| AI Gateway | https://www.herelai.fun/ws/05-ai-gateway/api/query |
+| App ID | bestyearplanner |
+| 語言 | 繁體中文 |
+| 數據庫 | SQLite3 (本地) |
+
+---
+
+## 📊 訂閱方案
+
+| 功能 | 基礎版 | 高級版 |
+|------|--------|--------|
+| 7天啟動 | ✅ | ✅ |
+| 21天挑戰 | 最多3組 | 無限 |
+| AI 教練 | ✅ | ✅ |
+| AI 洞察報告 | ❌ | ✅ |
+| 進階分析 | ❌ | ✅ |
+| 自訂提醒 | ❌ | ✅ |
+
+---
+
+## 📁 新增文件清單
+
+- Models/Challenge.swift
+- Models/Subscription.swift
+- ViewModels/ChallengeViewModel.swift
+- Views/Challenge/SevenDayLaunchView.swift
+- Views/Challenge/TwentyOneDayChallengeView.swift
+- Views/Challenge/ChallengeUnlockView.swift
+- Views/Settings/SubscriptionView.swift
+
+## 📁 修改文件清單
+
+- Models/Goal.swift
+- Models/Questionnaire.swift
+- Core/Constants/AppConstants.swift
+- Core/Constants/StringConstants.swift
+- Core/Modules/ModuleManager.swift
+- Services/AIService.swift
+- Storage/DatabaseManager.swift
+- Storage/UserDefaultsManager.swift
+- ViewModels/AppState.swift
+- ViewModels/OnboardingViewModel.swift
+- Views/Onboarding/OnboardingContainerView.swift
+- Views/Dashboard/DashboardView.swift
+- Views/MainTab/MainTabView.swift

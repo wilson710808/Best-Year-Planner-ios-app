@@ -2,8 +2,8 @@ import Foundation
 
 enum StringConstants {
     enum Auth {
-        static let welcomeTitle = "歡迎來到\n最佳年份規劃師"
-        static let welcomeSubtitle = "根據《規劃最好的一年》\n讓你的人生更有方向"
+        static let welcomeTitle = "從相信自己開始"
+        static let welcomeSubtitle = "7天啟動，21天改變\n一步步遇見更好的你"
         static let loginTitle = "登入"
         static let registerTitle = "註冊"
         static let forgotPasswordTitle = "忘記密碼"
@@ -25,7 +25,16 @@ enum StringConstants {
         static let nextButton = "下一步"
         static let previousButton = "上一步"
         static let skipButton = "跳過"
-        static let startButton = "開始規劃"
+        static let startButton = "開始我的7天啟動"
+        static let generatePlanButton = "生成專屬計畫"
+        static let welcomeHeadline = "從相信自己開始"
+        static let welcomeBody = "不需要宏大的計畫，只需要一個小小的開始。回答3個簡單問題，我會為你量身打造7天啟動計畫。"
+        static let generatingPlan = "AI 正在為你設計專屬計畫..."
+        static let planReady = "你的專屬7天啟動計畫"
+        static let planReadySubtitle = "每天只要5分鐘，體驗「我真的可以堅持」"
+        static let unlockTitle = "🎉 恭喜完成7天啟動！"
+        static let unlockSubtitle = "你已經證明了自己可以堅持。準備好迎接21天挑戰了嗎？"
+        static let startChallengeButton = "開始21天挑戰"
         static let careerTitle = "事業與財富"
         static let relationshipTitle = "人際關係"
         static let growthTitle = "自我成長"
@@ -35,7 +44,7 @@ enum StringConstants {
     }
 
     enum Dashboard {
-        static let title = "儀表板"
+        static let title = "最好的一年"
         static let yearProgress = "年度進度"
         static let thisWeek = "本週"
         static let thisMonth = "本月"
@@ -43,9 +52,36 @@ enum StringConstants {
         static let totalCheckIns = "總打卡次數"
         static let unfinishedTasks = "待完成任務"
         static let todayTasks = "今日任務"
+        static let todayMission = "今日任務"
+        static let currentChallenge = "目前挑戰"
+        static let sevenDayLaunch = "7天啟動"
+        static let twentyOneDayChallenge = "21天挑戰"
+        static let dayFormat = "第%@天"
+        static let completed = "已完成"
+        static let daysLeft = "還剩%@天"
         static let career = "事業/財富"
         static let relationship = "人際關係"
         static let growth = "自我成長"
+        static let noActiveChallenge = "還沒有進行中的挑戰"
+        static let startNewChallenge = "開始新挑戰"
+        static let streakMessage = "連續%@天，繼續加油！💪"
+    }
+
+    enum Challenge {
+        static let launchTitle = "7天啟動計畫"
+        static let launchSubtitle = "每天5分鐘，建立堅持的信心"
+        static let challengeTitle = "21天習慣養成"
+        static let challengeSubtitle = "科學證實，21天養成一個好習慣"
+        static let completeDay = "完成今日任務"
+        static let completedDay = "✅ 已完成"
+        static let dayNumber = "第%@天"
+        static let estimatedTime = "約%@分鐘"
+        static let aiTip = "AI 小建議"
+        static let viewTip = "查看建議"
+        static let milestone = "里程碑"
+        static let halfwayThere = "已過半！堅持就是勝利 🎯"
+        static let almostDone = "就快完成了！最後衝刺 🏁"
+        static let celebration = "🎊 太棒了！你做到了！"
     }
 
     enum Goals {
@@ -65,10 +101,12 @@ enum StringConstants {
         static let monthly = "月度"
         static let weekly = "每週"
         static let daily = "每日"
+        static let sevenDayLaunch = "7天啟動"
+        static let twentyOneDayChallenge = "21天挑戰"
     }
 
     enum CheckIn {
-        static let title = "打卡中心"
+        static let title = "打卡"
         static let todayTasks = "今日任務"
         static let completed = "已完成"
         static let partial = "部分完成"
@@ -91,10 +129,25 @@ enum StringConstants {
         static let monthlyReviewTitle = "月度復盤"
         static let trackDeviation = "軌道偏離提醒"
         static let howCanIHelp = "我是你的AI教練，有什麼可以幫助你？"
+        static let coachGreeting = "嗨！我來幫你堅持每一天 💪"
+    }
+
+    enum Subscription {
+        static let title = "升級高級版"
+        static let freeTier = "基礎版"
+        static let premiumTier = "高級版"
+        static let freeChallenges = "最多3組21天挑戰"
+        static let premiumChallenges = "無限21天挑戰"
+        static let upgradeButton = "升級高級版"
+        static let currentPlan = "目前方案"
+        static let features = "高級版功能"
+        static let restorePurchases = "恢復購買"
+        static let freeRemaining = "還可建立 %d 組21天挑戰"
+        static let premiumActive = "高級版已啟用 ✨"
     }
 
     enum Community {
-        static let title = "AI夥伴社群"
+        static let title = "夥伴社群"
         static let groups = "揪團列表"
         static let createGroup = "創建揪團"
         static let joinGroup = "加入揪團"
@@ -107,7 +160,7 @@ enum StringConstants {
     }
 
     enum Settings {
-        static let title = "設置"
+        static let title = "我的"
         static let profile = "個人資料"
         static let notifications = "通知設定"
         static let appearance = "外觀"
@@ -121,6 +174,8 @@ enum StringConstants {
         static let lightMode = "淺色模式"
         static let darkMode = "深色模式"
         static let systemMode = "跟隨系統"
+        static let subscription = "訂閱方案"
+        static let upgradeToPremium = "升級高級版"
     }
 
     enum Common {
@@ -135,5 +190,6 @@ enum StringConstants {
         static let success = "成功"
         static let retry = "重試"
         static let empty = "暫無數據"
+        static let startNow = "立即開始"
     }
 }
