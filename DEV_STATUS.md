@@ -56,7 +56,7 @@
 
 ### 技術
 - [x] Xcode 項目配置（所有80個.swift文件已加入）
-- [ ] 單元測試（撰寫中...）
+- [x] 單元測試（7個測試文件，覆蓋 Challenge/Subscription/Goal/Onboarding/Questionnaire/UserDefaults/ChallengeViewModel）
 - [ ] UI 測試
 - [x] App Store 截圖和描述文案 (AppStore/README_AppStore.md)
 
