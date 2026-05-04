@@ -26,6 +26,17 @@ final class ChallengeViewModel: ObservableObject {
     private func loadTodayTask(for challenge: Challenge) {
         let dayNumber = challenge.currentDayNumber
         todayTask = challenge.dailyTasks.first { $0.dayNumber == dayNumber }
+        
+        // Sync to widget
+        if let task = todayTask {
+            let dimension: GoalDimension = .growth
+            UserDefaultsManager.shared.syncTodayTaskToWidget(
+                task: task,
+                dayNumber: dayNumber,
+                totalDays: challenge.totalDays,
+                dimension: dimension
+            )
+        }
     }
 
     // MARK: - Complete Daily Task
@@ -75,6 +86,17 @@ final class ChallengeViewModel: ObservableObject {
 
         // Update today's task
         todayTask = challenge.dailyTasks.first { $0.dayNumber == challenge.currentDayNumber }
+        
+        // Sync to widget
+        if let task = todayTask {
+            let dimension: GoalDimension = .growth
+            UserDefaultsManager.shared.syncTodayTaskToWidget(
+                task: task,
+                dayNumber: challenge.currentDayNumber,
+                totalDays: challenge.totalDays,
+                dimension: dimension
+            )
+        }
 
         isCompleting = false
     }

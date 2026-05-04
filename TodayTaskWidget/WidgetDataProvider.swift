@@ -1,6 +1,24 @@
 import Foundation
 import WidgetKit
 
+// MARK: - Dimension Enum (Widget Local Copy)
+enum WidgetDimension: String, Codable {
+    case career
+    case relationship
+    case growth
+    
+    var widgetColor: Color {
+        switch self {
+        case .career:
+            return Color(red: 52/255, green: 152/255, blue: 219/255) // #3498DB
+        case .relationship:
+            return Color(red: 231/255, green: 76/255, blue: 140/255) // #E74C8C
+        case .growth:
+            return Color(red: 39/255, green: 174/255, blue: 96/255)  // #27AE60
+        }
+    }
+}
+
 // MARK: - Today Task Data (Shared with App)
 struct TodayTaskData: Codable {
     let taskTitle: String
@@ -9,7 +27,7 @@ struct TodayTaskData: Codable {
     let totalDays: Int
     let dimension: String
     let aiTip: String?
-    let updatedAt: Date
+    let updatedAt: String
 }
 
 // MARK: - Widget Data Provider

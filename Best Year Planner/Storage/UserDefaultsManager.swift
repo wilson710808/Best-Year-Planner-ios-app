@@ -141,18 +141,19 @@ final class UserDefaultsManager {
             return
         }
         
-        let taskData = TodayTaskData(
-            taskTitle: task.title,
-            taskDescription: task.description,
-            dayNumber: dayNumber,
-            totalDays: totalDays,
-            dimension: dimension.rawValue,
-            aiTip: task.aiTip,
-            updatedAt: Date()
-        )
+        // Create JSON manually to avoid type sharing issues with widget extension
+        let taskDict: [String: Any] = [
+            "taskTitle": task.title,
+            "taskDescription": task.description,
+            "dayNumber": dayNumber,
+            "totalDays": totalDays,
+            "dimension": dimension.rawValue,
+            "aiTip": task.aiTip ?? "",
+            "updatedAt": ISO8601DateFormatter().string(from: Date())
+        ]
         
         do {
-            let jsonData = try JSONEncoder().encode(taskData)
+            let jsonData = try JSONSerialization.data(withJSONObject: taskDict, options: [])
             let jsonString = String(data: jsonData, encoding: .utf8)
             appGroupDefaults.set(jsonString, forKey: "todayTask")
             appGroupDefaults.synchronize()
