@@ -29,10 +29,10 @@ enum AppConstants {
     }
 
     enum AI {
-        static let doubaoAPIKey = "YOUR_DOUBAN_API_KEY"
-        static let doubaoEndpoint = "https://ark.cn-beijing.volces.com/api/v3/chat/completions"
-        static let qwenAPIKey = "YOUR_QWEN_API_KEY"
-        static let qwenEndpoint = "https://dashscope.aliyuncs.com/api/v1/aigc/text-generation"
+        // AI Gateway 配置
+        static let gatewayBaseURL = "https://www.herelai.fun"
+        static let gatewayEndpoint = "/ws/05-ai-gateway/api/query"
+        static let appId = "bestyearplanner"
     }
 
     enum DateFormats {
