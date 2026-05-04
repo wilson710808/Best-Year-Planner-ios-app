@@ -12,7 +12,11 @@ final class ChallengeViewModel: ObservableObject {
     @Published var showingSubscription: Bool = false
 
     private let db = DatabaseManager.shared
-    private let aiService = AIService.shared
+    
+    // MARK: - Service Locator (Pluggable AI)
+    private var aiProvider: any AIProvider {
+        ServiceLocator.shared.aiProvider
+    }
 
     // MARK: - Load Challenges
     func loadChallenges() {
@@ -50,7 +54,7 @@ final class ChallengeViewModel: ObservableObject {
 
         // Get AI tip for completing
         let userId = UserDefaultsManager.shared.currentUserId ?? "anonymous"
-        let aiTip = await aiService.queryAIGateway(
+        let aiTip = await aiProvider.query(
             userId: userId,
             query: "用戶剛完成了\(challenge.phase == .sevenDayLaunch ? "7天啟動" : "21天挑戰")第\(challenge.currentDayNumber)天的任務「\(challenge.dailyTasks[taskIndex].title)」，請給一句簡短鼓勵（20字以內）"
         )
@@ -130,7 +134,7 @@ final class ChallengeViewModel: ObservableObject {
         {"title":"計畫標題","tasks":[{"day":1,"title":"任務標題","description":"任務描述","tip":"AI小建議"}]}
         """
 
-        let response = await aiService.queryAIGateway(userId: userId, query: prompt)
+        let response = await aiProvider.query(userId: userId, query: prompt)
 
         // Create goal for 21-day challenge
         let goal = Goal(

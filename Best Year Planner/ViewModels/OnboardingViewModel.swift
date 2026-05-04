@@ -24,7 +24,12 @@ final class OnboardingViewModel: ObservableObject {
         }
     }
 
-    private let aiService = AIService.shared
+    // MARK: - Service Locator
+    
+    /// AI Provider via ServiceLocator (supports hot-swap for testing)
+    private var aiProvider: any AIProvider {
+        ServiceLocator.shared.aiProvider
+    }
 
     func nextStep() {
         withAnimation {
@@ -58,7 +63,11 @@ final class OnboardingViewModel: ObservableObject {
         {"title":"計畫標題","tasks":[{"day":1,"title":"任務標題","description":"任務描述","tip":"AI小建議"}]}
         """
 
-        let response = await aiService.queryAIGateway(userId: "onboarding_\(UUID().uuidString.prefix(8))", query: prompt)
+        // Use ServiceLocator to get AI provider (pluggable)
+        let response = await aiProvider.query(
+            userId: "onboarding_\(UUID().uuidString.prefix(8))",
+            query: prompt
+        )
 
         // Try to parse JSON from response
         if let plan = parsePlanFromResponse(response) {

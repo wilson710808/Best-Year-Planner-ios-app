@@ -11,12 +11,16 @@ final class AIPartnerViewModel: ObservableObject {
     @Published var partnerName: String = ""
     @Published var errorMessage: String?
 
-    private let aiService = AIService.shared
     private let authService = AuthService.shared
     private let checkInService = CheckInService.shared
     private let taskService = TaskService.shared
     private let goalService = GoalService.shared
     private let logger = Logger(subsystem: "com.bestyear.planner", category: "AIPartnerViewModel")
+    
+    // MARK: - Service Locator (Pluggable AI)
+    private var aiProvider: any AIProvider {
+        ServiceLocator.shared.aiProvider
+    }
 
     /// 初始化伙伴名称
     init(partnerName: String = "小夥伴") {
@@ -44,7 +48,7 @@ final class AIPartnerViewModel: ObservableObject {
 
             // 从 AI Gateway 获取个性化欢迎消息
             logger.info("Fetching welcome message from AI Gateway...")
-            let personalizedWelcome = await aiService.getPartnerWelcomeMessage(
+            let personalizedWelcome = await aiProvider.query(
                 userId: currentUser.id,
                 partnerName: partnerName,
                 userData: userData
@@ -90,7 +94,7 @@ final class AIPartnerViewModel: ObservableObject {
         logger.info("Generating response for user: \(currentUser.id), query: \(userInput)")
 
         // 调用 AI Gateway API 获取回复
-        let response = await aiService.getPartnerResponse(
+        let response = await aiProvider.getPartnerResponse(
             userId: currentUser.id,
             query: userInput,
             partnerName: partnerName,

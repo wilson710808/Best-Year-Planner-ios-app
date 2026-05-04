@@ -10,12 +10,21 @@ final class AICoachViewModel: ObservableObject {
     @Published var currentReview: Review?
     @Published var welcomeMessage: String = ""
 
-    private let aiService = AIService.shared
     private let reviewService = ReviewService.shared
     private let checkInService = CheckInService.shared
     private let taskService = TaskService.shared
     private let authService = AuthService.shared
     private let goalService = GoalService.shared
+    
+    // MARK: - Service Locator (Pluggable AI)
+    private var aiProvider: any AIProvider {
+        ServiceLocator.shared.aiProvider
+    }
+    
+    /// Direct AIService access for local methods not in protocol
+    private var aiService: AIService {
+        AIService.shared
+    }
 
     /// 加载个性化欢迎消息
     func loadWelcomeMessage() async {
@@ -38,9 +47,9 @@ final class AICoachViewModel: ObservableObject {
 
             // 从 AI Gateway 获取个性化欢迎消息
             print("[AICoachViewModel] Fetching welcome message from AI Gateway...")
-            let personalizedWelcome = await aiService.getCoachWelcomeMessage(
+            let personalizedWelcome = await aiProvider.query(
                 userId: currentUser.id,
-                userData: userData
+                query: "請給我一句溫暖的歡迎消息，提及你是一位專業的AI教練"
             )
             
             print("[AICoachViewModel] Received welcome message: \(personalizedWelcome)")
@@ -82,7 +91,7 @@ final class AICoachViewModel: ObservableObject {
         print("[AICoachViewModel] Generating response for user: \(currentUser.id), query: \(userInput)")
 
         // 调用 AI Gateway API 获取回复
-        let response = await aiService.getCoachResponse(
+        let response = await aiProvider.getCoachResponse(
             userId: currentUser.id,
             query: userInput,
             conversationHistory: messages

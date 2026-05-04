@@ -1,13 +1,17 @@
 import Foundation
 
-final class ReviewService {
+final class ReviewService: Sendable {
     static let shared = ReviewService()
 
     private let database = DatabaseManager.shared
-    private let aiService = AIService.shared
     private let checkInService = CheckInService.shared
     private let taskService = TaskService.shared
     private let goalService = GoalService.shared
+    
+    // MARK: - Service Locator (Pluggable AI)
+    private var aiProvider: any AIProvider {
+        ServiceLocator.shared.aiProvider
+    }
 
     private init() {}
 
@@ -45,7 +49,7 @@ final class ReviewService {
         }
 
         let data: [String: Any] = ["completionRate": weeklySummary.completionRate]
-        let aiSuggestions = aiService.generateAISuggestion(forType: .weekly, data: data)
+        let aiSuggestions = aiProvider.generateAISuggestion(forType: .weekly, data: data)
 
         let review = Review(
             type: .weekly,
@@ -96,7 +100,7 @@ final class ReviewService {
         }
 
         let data: [String: Any] = ["monthProgress": monthlyProgress]
-        let aiSuggestions = aiService.generateAISuggestion(forType: .monthly, data: data)
+        let aiSuggestions = aiProvider.generateAISuggestion(forType: .monthly, data: data)
 
         let review = Review(
             type: .monthly,
@@ -155,7 +159,7 @@ final class ReviewService {
         }
 
         let data: [String: Any] = [:]
-        let aiSuggestions = aiService.generateAISuggestion(forType: .yearly, data: data)
+        aiSuggestions = aiProvider.generateAISuggestion(forType: .yearly, data: data)
 
         let review = Review(
             type: .yearly,
