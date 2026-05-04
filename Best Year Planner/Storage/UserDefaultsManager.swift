@@ -1,9 +1,11 @@
 import Foundation
+import WidgetKit
 
 final class UserDefaultsManager {
     static let shared = UserDefaultsManager()
 
     private let defaults = UserDefaults.standard
+    private let appGroupSuiteName = "group.com.bestyearplanner"
 
     private init() {}
 
@@ -128,6 +130,38 @@ final class UserDefaultsManager {
         defaults.removePersistentDomain(forName: domain)
         defaults.synchronize()
         KeychainManager.shared.clearAll()
+    }
+
+    // MARK: - Widget Sync
+    
+    /// Sync today's task to widget via App Group UserDefaults
+    func syncTodayTaskToWidget(task: DailyChallengeTask, dayNumber: Int, totalDays: Int, dimension: GoalDimension) {
+        guard let appGroupDefaults = UserDefaults(suiteName: appGroupSuiteName) else {
+            print("Error: Could not access app group UserDefaults")
+            return
+        }
+        
+        let taskData = TodayTaskData(
+            taskTitle: task.title,
+            taskDescription: task.description,
+            dayNumber: dayNumber,
+            totalDays: totalDays,
+            dimension: dimension.rawValue,
+            aiTip: task.aiTip,
+            updatedAt: Date()
+        )
+        
+        do {
+            let jsonData = try JSONEncoder().encode(taskData)
+            let jsonString = String(data: jsonData, encoding: .utf8)
+            appGroupDefaults.set(jsonString, forKey: "todayTask")
+            appGroupDefaults.synchronize()
+            
+            // Reload widget timelines
+            WidgetCenter.shared.reloadAllTimelines()
+        } catch {
+            print("Error encoding today task data for widget: \(error)")
+        }
     }
 }
 
