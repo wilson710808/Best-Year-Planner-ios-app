@@ -7,6 +7,27 @@
 	objects = {
 
 /* Begin PBXBuildFile section */
+		2E44455901C24726AD945478 /* StoreKitService.swift in Sources */ = {isa = PBXBuildFile; fileRef = 25050A0AA4E8426388946BF7 /* StoreKitService.swift */; };
+		25B12A5B72DE42D79B093AF1 /* ChallengeNotificationManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = 863B6726A1454912A8CF66CD /* ChallengeNotificationManager.swift */; };
+		9D74DF6FA25B4E1AB47DAC3C /* Challenge.swift in Sources */ = {isa = PBXBuildFile; fileRef = F4CEAFCD506249C8BC92CAF2 /* Challenge.swift */; };
+		17A04599EE4940279811E5A3 /* Subscription.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8269079F290E4B13A0B648B3 /* Subscription.swift */; };
+		D2D646F1BFD547DF93782295 /* GoalEnhancement.swift in Sources */ = {isa = PBXBuildFile; fileRef = 33C0C9E16C524942B452956A /* GoalEnhancement.swift */; };
+		9E2B2589C8C344C2A537FEC9 /* ChallengeViewModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = E2DFBDF4B99F4BA6A387AB0F /* ChallengeViewModel.swift */; };
+		E1486A68EC884387AA22C995 /* SevenDayLaunchView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 770FBFAFFABD4000B5A8974A /* SevenDayLaunchView.swift */; };
+		D350B91014964066925186E3 /* TwentyOneDayChallengeView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 884015E9E7E64375B5D8FC97 /* TwentyOneDayChallengeView.swift */; };
+		C530982D7F7E4A838AE44945 /* ChallengeUnlockView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 6345AE4FF4BD4FCA840B9E32 /* ChallengeUnlockView.swift */; };
+		58C3B1C0D7654A60A6C83880 /* SubscriptionView.swift in Sources */ = {isa = PBXBuildFile; fileRef = E5D3E05502B646929666B425 /* SubscriptionView.swift */; };
+		7A27D0D707214E5F8203CC76 /* AddGoalView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 24CADF5A7FB4486E90F6CD4C /* AddGoalView.swift */; };
+		D64252F6F122469C9AD503B9 /* GoalDetailView.swift in Sources */ = {isa = PBXBuildFile; fileRef = B74760ACE0A14CC49AD2BF83 /* GoalDetailView.swift */; };
+		A6188DA3B0054B12A5B43EBA /* TaskListView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 30D5ED1EEB4548E386DB307C /* TaskListView.swift */; };
+		14D8BB07111D4E52B5AB373D /* CheckInCalendarView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 20318A8EF0164A7CB642528A /* CheckInCalendarView.swift */; };
+		A69CE43FA7B34CEEA6771017 /* DimensionProgressView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 6E2D077EA0584F25B2A5B72E /* DimensionProgressView.swift */; };
+		849DF66FF7584E44A611D79C /* WeeklySummaryView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7027AE47F66543DDB648B907 /* WeeklySummaryView.swift */; };
+		EEF65FF0F2BC4813B8C062B1 /* WeeklyReviewContainerView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 36274BE5F9374DB0A3050336 /* WeeklyReviewContainerView.swift */; };
+		2DE1E0C449ED4984A3286862 /* MonthlyReviewView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9C897488107A4E63A18DBE74 /* MonthlyReviewView.swift */; };
+		69DAC5206E5D45B88A5D0B37 /* GroupListView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 707722B0BD98484883B4D2C0 /* GroupListView.swift */; };
+		80246963E4FE4F2D960FD389 /* LeaderboardView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4720728444F04E9A9BAEA152 /* LeaderboardView.swift */; };
+		13102CD156E840E7873692F5 /* NotificationSettingsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 924FA737BCA04600966913C9 /* NotificationSettingsView.swift */; };
 		00AA88DB23EB4F87F93A98D7 /* CommunityViewModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = A798AB4FC2F805C9E3CC171B /* CommunityViewModel.swift */; };
 		01DABFEF16CA1B5FA98552BE /* CommunityService.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9330BDCA6AA874529CF04911 /* CommunityService.swift */; };
 		020423FEFB0523C8ED0B1C84 /* MainTabView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7288577DDD27D516E3999EA8 /* MainTabView.swift */; };
@@ -90,6 +111,27 @@
 /* End PBXContainerItemProxy section */
 
 /* Begin PBXFileReference section */
+		25050A0AA4E8426388946BF7 /* StoreKitService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = StoreKitService.swift; sourceTree = "<group>"; };
+		863B6726A1454912A8CF66CD /* ChallengeNotificationManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ChallengeNotificationManager.swift; sourceTree = "<group>"; };
+		F4CEAFCD506249C8BC92CAF2 /* Challenge.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Challenge.swift; sourceTree = "<group>"; };
+		8269079F290E4B13A0B648B3 /* Subscription.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Subscription.swift; sourceTree = "<group>"; };
+		33C0C9E16C524942B452956A /* GoalEnhancement.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = GoalEnhancement.swift; sourceTree = "<group>"; };
+		E2DFBDF4B99F4BA6A387AB0F /* ChallengeViewModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ChallengeViewModel.swift; sourceTree = "<group>"; };
+		770FBFAFFABD4000B5A8974A /* SevenDayLaunchView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SevenDayLaunchView.swift; sourceTree = "<group>"; };
+		884015E9E7E64375B5D8FC97 /* TwentyOneDayChallengeView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TwentyOneDayChallengeView.swift; sourceTree = "<group>"; };
+		6345AE4FF4BD4FCA840B9E32 /* ChallengeUnlockView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ChallengeUnlockView.swift; sourceTree = "<group>"; };
+		E5D3E05502B646929666B425 /* SubscriptionView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SubscriptionView.swift; sourceTree = "<group>"; };
+		24CADF5A7FB4486E90F6CD4C /* AddGoalView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AddGoalView.swift; sourceTree = "<group>"; };
+		B74760ACE0A14CC49AD2BF83 /* GoalDetailView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = GoalDetailView.swift; sourceTree = "<group>"; };
+		30D5ED1EEB4548E386DB307C /* TaskListView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TaskListView.swift; sourceTree = "<group>"; };
+		20318A8EF0164A7CB642528A /* CheckInCalendarView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CheckInCalendarView.swift; sourceTree = "<group>"; };
+		6E2D077EA0584F25B2A5B72E /* DimensionProgressView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DimensionProgressView.swift; sourceTree = "<group>"; };
+		7027AE47F66543DDB648B907 /* WeeklySummaryView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WeeklySummaryView.swift; sourceTree = "<group>"; };
+		36274BE5F9374DB0A3050336 /* WeeklyReviewContainerView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WeeklyReviewContainerView.swift; sourceTree = "<group>"; };
+		9C897488107A4E63A18DBE74 /* MonthlyReviewView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MonthlyReviewView.swift; sourceTree = "<group>"; };
+		707722B0BD98484883B4D2C0 /* GroupListView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = GroupListView.swift; sourceTree = "<group>"; };
+		4720728444F04E9A9BAEA152 /* LeaderboardView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LeaderboardView.swift; sourceTree = "<group>"; };
+		924FA737BCA04600966913C9 /* NotificationSettingsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = NotificationSettingsView.swift; sourceTree = "<group>"; };
 		0096CC5EFEC2AC90780AFA04 /* Best_Year_PlannerUITestsLaunchTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Best_Year_PlannerUITestsLaunchTests.swift; sourceTree = "<group>"; };
 		00E4B8C9DF6B7D1F9167B27F /* ForgotPasswordView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ForgotPasswordView.swift; sourceTree = "<group>"; };
 		04CFAE521ADA33894DCD9B6F /* TaskService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TaskService.swift; sourceTree = "<group>"; };
@@ -291,6 +333,27 @@
 		75EFCD0467707C0FDCF3F651 /* Best Year Planner */ = {
 			isa = PBXGroup;
 			children = (
+				25050A0AA4E8426388946BF7 /* StoreKitService.swift */,
+				863B6726A1454912A8CF66CD /* ChallengeNotificationManager.swift */,
+				F4CEAFCD506249C8BC92CAF2 /* Challenge.swift */,
+				8269079F290E4B13A0B648B3 /* Subscription.swift */,
+				33C0C9E16C524942B452956A /* GoalEnhancement.swift */,
+				E2DFBDF4B99F4BA6A387AB0F /* ChallengeViewModel.swift */,
+				770FBFAFFABD4000B5A8974A /* SevenDayLaunchView.swift */,
+				884015E9E7E64375B5D8FC97 /* TwentyOneDayChallengeView.swift */,
+				6345AE4FF4BD4FCA840B9E32 /* ChallengeUnlockView.swift */,
+				E5D3E05502B646929666B425 /* SubscriptionView.swift */,
+				24CADF5A7FB4486E90F6CD4C /* AddGoalView.swift */,
+				B74760ACE0A14CC49AD2BF83 /* GoalDetailView.swift */,
+				30D5ED1EEB4548E386DB307C /* TaskListView.swift */,
+				20318A8EF0164A7CB642528A /* CheckInCalendarView.swift */,
+				6E2D077EA0584F25B2A5B72E /* DimensionProgressView.swift */,
+				7027AE47F66543DDB648B907 /* WeeklySummaryView.swift */,
+				36274BE5F9374DB0A3050336 /* WeeklyReviewContainerView.swift */,
+				9C897488107A4E63A18DBE74 /* MonthlyReviewView.swift */,
+				707722B0BD98484883B4D2C0 /* GroupListView.swift */,
+				4720728444F04E9A9BAEA152 /* LeaderboardView.swift */,
+				924FA737BCA04600966913C9 /* NotificationSettingsView.swift */,
 				A7BB00BCEEFFC57A0E5A2BF5 /* Best_Year_PlannerApp.swift */,
 				F6ED9700A95DF5213D2175A7 /* ContentView.swift */,
 				61C34A0E4EAC67DF52698C2D /* App */,
@@ -565,6 +628,27 @@
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				2E44455901C24726AD945478 /* StoreKitService.swift in Sources */,
+				25B12A5B72DE42D79B093AF1 /* ChallengeNotificationManager.swift in Sources */,
+				9D74DF6FA25B4E1AB47DAC3C /* Challenge.swift in Sources */,
+				17A04599EE4940279811E5A3 /* Subscription.swift in Sources */,
+				D2D646F1BFD547DF93782295 /* GoalEnhancement.swift in Sources */,
+				9E2B2589C8C344C2A537FEC9 /* ChallengeViewModel.swift in Sources */,
+				E1486A68EC884387AA22C995 /* SevenDayLaunchView.swift in Sources */,
+				D350B91014964066925186E3 /* TwentyOneDayChallengeView.swift in Sources */,
+				C530982D7F7E4A838AE44945 /* ChallengeUnlockView.swift in Sources */,
+				58C3B1C0D7654A60A6C83880 /* SubscriptionView.swift in Sources */,
+				7A27D0D707214E5F8203CC76 /* AddGoalView.swift in Sources */,
+				D64252F6F122469C9AD503B9 /* GoalDetailView.swift in Sources */,
+				A6188DA3B0054B12A5B43EBA /* TaskListView.swift in Sources */,
+				14D8BB07111D4E52B5AB373D /* CheckInCalendarView.swift in Sources */,
+				A69CE43FA7B34CEEA6771017 /* DimensionProgressView.swift in Sources */,
+				849DF66FF7584E44A611D79C /* WeeklySummaryView.swift in Sources */,
+				EEF65FF0F2BC4813B8C062B1 /* WeeklyReviewContainerView.swift in Sources */,
+				2DE1E0C449ED4984A3286862 /* MonthlyReviewView.swift in Sources */,
+				69DAC5206E5D45B88A5D0B37 /* GroupListView.swift in Sources */,
+				80246963E4FE4F2D960FD389 /* LeaderboardView.swift in Sources */,
+				13102CD156E840E7873692F5 /* NotificationSettingsView.swift in Sources */,
 				8585C27FB7FE115478DBA7B8 /* Best_Year_PlannerTests.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;

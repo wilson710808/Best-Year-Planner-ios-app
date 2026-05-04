@@ -41,7 +41,7 @@ final class ChallengeViewModel: ObservableObject {
         let userId = UserDefaultsManager.shared.currentUserId ?? "anonymous"
         let aiTip = await aiService.queryAIGateway(
             userId: userId,
-            query: "用戶剛完成了7天啟動第\(challenge.currentDayNumber)天的任務「\(challenge.dailyTasks[taskIndex].title)」，請給一句簡短鼓勵（20字以內）"
+            query: "用戶剛完成了\(challenge.phase == .sevenDayLaunch ? "7天啟動" : "21天挑戰")第\(challenge.currentDayNumber)天的任務「\(challenge.dailyTasks[taskIndex].title)」，請給一句簡短鼓勵（20字以內）"
         )
 
         // Update task
@@ -54,14 +54,19 @@ final class ChallengeViewModel: ObservableObject {
         // Check if challenge is complete
         if challenge.isCompleted {
             if challenge.phase == .sevenDayLaunch {
-                // 7天完成，顯示解鎖頁面
+                // 7天完成，顯示解鎖頁面 + 通知
                 showingUnlock = true
                 challenge.phase = .completed
+                ChallengeNotificationManager.shared.scheduleUnlockReminder()
             } else if challenge.phase == .twentyOneDayChallenge {
                 // 21天完成
                 challenge.phase = .completed
                 AppState.shared.decrementActiveChallengeCount()
+                ChallengeNotificationManager.shared.clearBadge()
             }
+        } else {
+            // Schedule streak warning for the evening
+            ChallengeNotificationManager.shared.scheduleStreakWarningReminder(streakDays: challenge.completedDays)
         }
 
         // Save to database
@@ -132,6 +137,9 @@ final class ChallengeViewModel: ObservableObject {
 
         _ = db.saveChallenge(challenge)
         AppState.shared.incrementActiveChallengeCount()
+
+        // Schedule notifications for the new challenge
+        ChallengeNotificationManager.shared.scheduleTwentyOneDayReminders(challenge: challenge)
 
         showingUnlock = false
         currentChallenge = challenge

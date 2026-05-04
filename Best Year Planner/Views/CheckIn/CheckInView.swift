@@ -2,6 +2,7 @@ import SwiftUI
 
 struct CheckInView: View {
     @StateObject private var viewModel = CheckInViewModel()
+    @StateObject private var challengeViewModel = ChallengeViewModel()
     @State private var showCheckInSheet = false
 
     var body: some View {
@@ -9,39 +10,100 @@ struct CheckInView: View {
             ZStack {
                 AppColors.background.ignoresSafeArea()
 
-                VStack(spacing: 16) {
-                    HStack(spacing: 16) {
-                        SummaryCardView(
-                            icon: "checkmark.circle.fill",
-                            value: "\(viewModel.todayCheckIns.filter { $0.status == .completed }.count)",
-                            label: StringConstants.CheckIn.completed
-                        )
+                ScrollView {
+                    VStack(spacing: 16) {
+                        // Stats
+                        HStack(spacing: 16) {
+                            SummaryCardView(
+                                icon: "checkmark.circle.fill",
+                                value: "\(viewModel.todayCheckIns.filter { $0.status == .completed }.count)",
+                                label: StringConstants.CheckIn.completed
+                            )
 
-                        SummaryCardView(
-                            icon: "flame.fill",
-                            value: "\(viewModel.todayCheckIns.map { $0.taskId }.reduce(0) { _, _ in 1 })",
-                            label: StringConstants.CheckIn.streakDays
-                        )
-                    }
-                    .padding(.horizontal)
+                            SummaryCardView(
+                                icon: "flame.fill",
+                                value: "\(challengeViewModel.currentChallenge?.completedDays ?? 0)",
+                                label: StringConstants.CheckIn.streakDays
+                            )
+                        }
+                        .padding(.horizontal)
 
-                    ScrollView {
-                        LazyVStack(spacing: 12) {
-                            ForEach(viewModel.todayTasks) { task in
-                                CheckInTaskRow(
-                                    task: task,
-                                    checkIn: viewModel.getCheckIn(forTaskId: task.id),
-                                    streak: viewModel.getStreak(forTaskId: task.id),
-                                    hasCheckedIn: viewModel.hasCheckedIn(task: task),
-                                    onCheckIn: {
-                                        viewModel.selectTask(task)
-                                        showCheckInSheet = true
+                        // Challenge task section (if active)
+                        if let challenge = challengeViewModel.currentChallenge,
+                           let todayTask = challengeViewModel.todayTask {
+                            VStack(alignment: .leading, spacing: 12) {
+                                HStack {
+                                    Image(systemName: challenge.phase == .sevenDayLaunch ? "bolt.fill" : "flame.fill")
+                                        .foregroundColor(challenge.phase == .sevenDayLaunch ? AppColors.accent : AppColors.primary)
+                                    Text(challenge.phase == .sevenDayLaunch ? StringConstants.Dashboard.sevenDayLaunch : StringConstants.Dashboard.twentyOneDayChallenge)
+                                        .font(.headline)
+                                        .foregroundColor(AppColors.textPrimary)
+                                    Spacer()
+                                    Text("第\(challenge.currentDayNumber)天")
+                                        .font(.caption)
+                                        .fontWeight(.semibold)
+                                        .foregroundColor(.white)
+                                        .padding(.horizontal, 8)
+                                        .padding(.vertical, 3)
+                                        .background(AppColors.primary)
+                                        .cornerRadius(10)
+                                }
+
+                                ChallengeCheckInRow(
+                                    task: todayTask,
+                                    isCompleting: challengeViewModel.isCompleting,
+                                    onComplete: {
+                                        Task { await challengeViewModel.completeTodayTask() }
                                     }
                                 )
                             }
+                            .padding()
+                            .background(Color.white)
+                            .cornerRadius(12)
+                            .shadow(color: Color.black.opacity(0.04), radius: 4, x: 0, y: 2)
+                            .padding(.horizontal)
                         }
-                        .padding(.horizontal)
+
+                        // Regular tasks
+                        if !viewModel.todayTasks.isEmpty {
+                            VStack(alignment: .leading, spacing: 12) {
+                                Text(StringConstants.CheckIn.todayTasks)
+                                    .font(.headline)
+                                    .foregroundColor(AppColors.textPrimary)
+                                    .padding(.horizontal)
+
+                                LazyVStack(spacing: 12) {
+                                    ForEach(viewModel.todayTasks) { task in
+                                        CheckInTaskRow(
+                                            task: task,
+                                            checkIn: viewModel.getCheckIn(forTaskId: task.id),
+                                            streak: viewModel.getStreak(forTaskId: task.id),
+                                            hasCheckedIn: viewModel.hasCheckedIn(task: task),
+                                            onCheckIn: {
+                                                viewModel.selectTask(task)
+                                                showCheckInSheet = true
+                                            }
+                                        )
+                                    }
+                                }
+                                .padding(.horizontal)
+                            }
+                        }
+
+                        // Empty state
+                        if challengeViewModel.currentChallenge == nil && viewModel.todayTasks.isEmpty {
+                            VStack(spacing: 16) {
+                                Image(systemName: "checkmark.circle")
+                                    .font(.system(size: 48))
+                                    .foregroundColor(AppColors.divider)
+                                Text("今天沒有待完成的任務")
+                                    .font(.subheadline)
+                                    .foregroundColor(AppColors.textSecondary)
+                            }
+                            .padding(.top, 60)
+                        }
                     }
+                    .padding(.bottom, 24)
                 }
             }
             .navigationTitle(StringConstants.CheckIn.title)
@@ -50,11 +112,73 @@ struct CheckInView: View {
                     CheckInSheetView(viewModel: viewModel, task: task)
                 }
             }
+            .sheet(isPresented: $challengeViewModel.showingUnlock) {
+                ChallengeUnlockView(viewModel: challengeViewModel)
+            }
             .onAppear {
                 viewModel.loadTodaysData()
+                challengeViewModel.loadChallenges()
             }
             .refreshable {
                 viewModel.loadTodaysData()
+                challengeViewModel.loadChallenges()
+            }
+        }
+    }
+}
+
+// MARK: - Challenge Check-In Row
+struct ChallengeCheckInRow: View {
+    let task: DailyChallengeTask
+    let isCompleting: Bool
+    let onComplete: () -> Void
+
+    var body: some View {
+        HStack(spacing: 12) {
+            VStack(alignment: .leading, spacing: 4) {
+                Text(task.title)
+                    .font(.subheadline)
+                    .fontWeight(.medium)
+                    .foregroundColor(task.isCompleted ? AppColors.textSecondary : AppColors.textPrimary)
+                    .strikethrough(task.isCompleted)
+
+                HStack(spacing: 8) {
+                    Label("\(task.estimatedMinutes)分鐘", systemImage: "clock")
+                        .font(.caption2)
+                        .foregroundColor(AppColors.textSecondary)
+
+                    if task.aiTip != nil {
+                        Label("AI建議", systemImage: "sparkle")
+                            .font(.caption2)
+                            .foregroundColor(AppColors.accent)
+                    }
+                }
+            }
+
+            Spacer()
+
+            if task.isCompleted {
+                Image(systemName: "checkmark.circle.fill")
+                    .font(.title2)
+                    .foregroundColor(AppColors.success)
+            } else {
+                Button(action: onComplete) {
+                    if isCompleting {
+                        ProgressView()
+                            .progressViewStyle(CircularProgressViewStyle(tint: .white))
+                            .frame(width: 36, height: 36)
+                            .background(AppColors.primary)
+                            .cornerRadius(18)
+                    } else {
+                        Image(systemName: "checkmark")
+                            .font(.body)
+                            .foregroundColor(.white)
+                            .frame(width: 36, height: 36)
+                            .background(AppColors.primary)
+                            .cornerRadius(18)
+                    }
+                }
+                .disabled(isCompleting)
             }
         }
     }

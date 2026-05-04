@@ -4,7 +4,8 @@ import StoreKit
 struct SubscriptionView: View {
     @EnvironmentObject private var appState: AppState
     @Environment(\.dismiss) private var dismiss
-    @State private var selectedTier: SubscriptionTier = .premium
+    @StateObject private var storeKit = StoreKitService.shared
+    @State private var selectedProductID: String?
 
     var body: some View {
         NavigationStack {
@@ -78,43 +79,86 @@ struct SubscriptionView: View {
                     .cornerRadius(12)
                     .padding(.horizontal)
 
-                    // Premium features
-                    VStack(alignment: .leading, spacing: 16) {
-                        Text(StringConstants.Subscription.features)
-                            .font(.headline)
-                            .foregroundColor(AppColors.textPrimary)
+                    // Premium products
+                    if !storeKit.products.isEmpty {
+                        VStack(alignment: .leading, spacing: 16) {
+                            Text(StringConstants.Subscription.features)
+                                .font(.headline)
+                                .foregroundColor(AppColors.textPrimary)
+                                .padding(.horizontal)
 
-                        ForEach(SubscriptionFeature.allCases, id: \.rawValue) { feature in
-                            HStack(spacing: 12) {
-                                Image(systemName: "checkmark.seal.fill")
-                                    .foregroundColor(AppColors.accent)
+                            ForEach(storeKit.products, id: \.id) { product in
+                                ProductCard(
+                                    product: product,
+                                    isSelected: selectedProductID == product.id,
+                                    onSelect: { selectedProductID = product.id }
+                                )
+                                .padding(.horizontal)
+                            }
+                        }
+                    } else {
+                        // Premium features list
+                        VStack(alignment: .leading, spacing: 16) {
+                            Text(StringConstants.Subscription.features)
+                                .font(.headline)
+                                .foregroundColor(AppColors.textPrimary)
 
-                                VStack(alignment: .leading, spacing: 2) {
-                                    Text(feature.title)
-                                        .font(.subheadline)
-                                        .fontWeight(.medium)
-                                        .foregroundColor(AppColors.textPrimary)
+                            ForEach(SubscriptionFeature.allCases, id: \.rawValue) { feature in
+                                HStack(spacing: 12) {
+                                    Image(systemName: "checkmark.seal.fill")
+                                        .foregroundColor(AppColors.accent)
 
-                                    Text(feature.description)
-                                        .font(.caption)
-                                        .foregroundColor(AppColors.textSecondary)
+                                    VStack(alignment: .leading, spacing: 2) {
+                                        Text(feature.title)
+                                            .font(.subheadline)
+                                            .fontWeight(.medium)
+                                            .foregroundColor(AppColors.textPrimary)
+
+                                        Text(feature.description)
+                                            .font(.caption)
+                                            .foregroundColor(AppColors.textSecondary)
+                                    }
                                 }
                             }
                         }
+                        .padding()
+                        .background(Color.white)
+                        .cornerRadius(12)
+                        .padding(.horizontal)
                     }
-                    .padding()
-                    .background(Color.white)
-                    .cornerRadius(12)
-                    .padding(.horizontal)
+
+                    // Error message
+                    if let error = storeKit.purchaseError {
+                        Text(error)
+                            .font(.caption)
+                            .foregroundColor(AppColors.error)
+                            .padding(.horizontal)
+                    }
 
                     // Upgrade button
                     if !appState.subscriptionState.isPremium {
                         Button(action: {
-                            appState.upgradeToPremium()
-                            dismiss()
+                            Task {
+                                if let productID = selectedProductID,
+                                   let product = storeKit.products.first(where: { $0.id == productID }) {
+                                    let success = await storeKit.purchase(product)
+                                    if success {
+                                        dismiss()
+                                    }
+                                } else {
+                                    // Fallback: direct upgrade (for testing)
+                                    appState.upgradeToPremium()
+                                    dismiss()
+                                }
+                            }
                         }) {
                             HStack(spacing: 8) {
-                                Image(systemName: "crown.fill")
+                                if storeKit.isLoading {
+                                    ProgressView()
+                                        .progressViewStyle(CircularProgressViewStyle(tint: .white))
+                                } else {
+                                    Image(systemName: "crown.fill")
+                                }
                                 Text(StringConstants.Subscription.upgradeButton)
                             }
                             .font(.headline)
@@ -131,7 +175,11 @@ struct SubscriptionView: View {
                         }
                         .padding(.horizontal)
 
-                        Button(action: {}) {
+                        Button(action: {
+                            Task {
+                                await storeKit.restorePurchases()
+                            }
+                        }) {
                             Text(StringConstants.Subscription.restorePurchases)
                                 .font(.caption)
                                 .foregroundColor(AppColors.textSecondary)
@@ -151,6 +199,60 @@ struct SubscriptionView: View {
                     }
                 }
             }
+            .task {
+                await storeKit.loadProducts()
+            }
+        }
+    }
+}
+
+// MARK: - Product Card
+struct ProductCard: View {
+    let product: Product
+    let isSelected: Bool
+    let onSelect: () -> Void
+
+    var body: some View {
+        Button(action: onSelect) {
+            HStack(spacing: 16) {
+                // Selection indicator
+                ZStack {
+                    Circle()
+                        .stroke(isSelected ? AppColors.accent : AppColors.divider, lineWidth: 2)
+                        .frame(width: 24, height: 24)
+                    if isSelected {
+                        Circle()
+                            .fill(AppColors.accent)
+                            .frame(width: 16, height: 16)
+                    }
+                }
+
+                VStack(alignment: .leading, spacing: 4) {
+                    Text(product.displayName)
+                        .font(.subheadline)
+                        .fontWeight(.semibold)
+                        .foregroundColor(AppColors.textPrimary)
+
+                    Text(product.description)
+                        .font(.caption)
+                        .foregroundColor(AppColors.textSecondary)
+                        .lineLimit(2)
+                }
+
+                Spacer()
+
+                Text(product.displayPrice)
+                    .font(.subheadline)
+                    .fontWeight(.bold)
+                    .foregroundColor(AppColors.accent)
+            }
+            .padding()
+            .background(isSelected ? AppColors.accent.opacity(0.05) : Color.white)
+            .cornerRadius(12)
+            .overlay(
+                RoundedRectangle(cornerRadius: 12)
+                    .stroke(isSelected ? AppColors.accent : AppColors.divider, lineWidth: isSelected ? 2 : 1)
+            )
         }
     }
 }
