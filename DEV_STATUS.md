@@ -52,13 +52,13 @@
 - [x] Dark Mode 自適應（ColorConstants + RootView preferredColorScheme）
 - [x] AI Prompt 優化（7天/21天結構化提示詞）
 - [x] AI Tip 快取機制（1小時過期）
-- [ ] Widget 支持（iOS 鎖屏顯示今日任務）
+- [x] Widget 支持（TodayTaskWidget - Small/Medium 尺寸）
 
 ### 技術
 - [x] Xcode 項目配置（所有80個.swift文件已加入）
-- [ ] 單元測試
+- [ ] 單元測試（撰寫中...）
 - [ ] UI 測試
-- [ ] App Store 截圖和描述
+- [x] App Store 截圖和描述文案 (AppStore/README_AppStore.md)
 
 ### AI 優化
 - [x] AI 生成7天計畫的 prompt 優化（漸進式：認知→行動→錨點）
@@ -94,7 +94,16 @@
 
 ---
 
-## 📁 新增文件清單
+## 📁 最新新增文件 (commit 9230a39)
+
+- AppStore/README_AppStore.md — App Store 完整文案 + 截圖規劃
+- TodayTaskWidget/TodayTaskWidget.swift — Widget 主入口
+- TodayTaskWidget/TodayTaskWidgetBundle.swift — Widget Bundle
+- TodayTaskWidget/WidgetDataProvider.swift — App Group 數據共享
+- TodayTaskWidget/SmallWidgetView.swift — Small 尺寸（進度圈+任務）
+- TodayTaskWidget/MediumWidgetView.swift — Medium 尺寸（任務+AI Tip+進度）
+
+## 📁 新增文件清單 (v2.0)
 
 - Models/Challenge.swift
 - Models/Subscription.swift
