@@ -5,6 +5,10 @@ final class AIService {
     
     private let urlSession: URLSession
 
+    // MARK: - Tip Cache
+    private var tipCache: [String: (tip: String, timestamp: Date)] = [:]
+    private let tipCacheExpiry: TimeInterval = 3600 // 1 hour
+
     private init() {
         let config = URLSessionConfiguration.default
         config.timeoutIntervalForRequest = 60
@@ -613,14 +617,23 @@ final class AIService {
     /// Generate a 7-day launch plan based on user's 3 answers
     func generateSevenDayLaunchPlan(answers: [String], userId: String) async -> SevenDayLaunchPlan? {
         let prompt = """
+        你是一位專業的習慣養成教練，精通《原子習慣》和《規劃最好的一年》方法論。
+
         用戶回答了三個問題：
-        1. 今年最想提升的是：\(answers.count > 0 ? answers[0] : "")
-        2. 願意從小事開始：\(answers.count > 1 ? answers[1] : "")
-        3. 一年後想成為：\(answers.count > 2 ? answers[2] : "")
+        1. 今年最想提升的是：\(answers.count > 0 ? answers[0] : "成為更好的自己")
+        2. 願意從小事開始：\(answers.count > 1 ? answers[1] : "每天進步一點點")
+        3. 一年後想成為：\(answers.count > 2 ? answers[2] : "更有自信的人")
 
-        請根據這些回答，為用戶設計一個7天啟動計畫，每天一個5分鐘可完成的小任務，目標是讓用戶體驗到「我真的可以堅持」。
+        請根據以上回答，設計一個7天啟動計畫。
 
-        請嚴格按照以下JSON格式返回，不要包含其他文字：
+        核心原則：
+        - 每天只需5分鐘，降低啟動阻力
+        - 任務必須具體可行（如「寫下3個你想改變的原因」，而非「思考改變」）
+        - 漸進式：前2天認知覺察 → 中間3天小行動 → 最後2天建立錨點
+        - 每個tip用一句話給予鼓勵或洞見
+        - 標題要有感染力，讓用戶一看就想做
+
+        請嚴格按JSON格式返回，不要包含其他文字：
         {"title":"計畫標題","tasks":[{"day":1,"title":"任務標題","description":"任務描述","tip":"AI小建議"}]}
         """
 
@@ -633,12 +646,22 @@ final class AIService {
         let completedTasks = completedLaunch.dailyTasks.map { "第\($0.dayNumber)天: \($0.title) - \($0.isCompleted ? "✅" : "❌")" }.joined(separator: "\n")
 
         let prompt = """
-        用戶已經完成了7天啟動計畫，以下是每天的完成情況：
+        你是一位專業的習慣養成教練。用戶已成功完成7天啟動，現在要進入21天習慣養成階段。
+
+        7天啟動完成情況：
         \(completedTasks)
 
-        請根據這個基礎，為用戶設計一個21天習慣養成計畫，每天一個任務，時間可以從5-15分鐘遞增。
+        請設計21天習慣養成計畫，遵循以下原則：
+        - 3個7天循環，每個循環有明確主題：
+          第1週（Day 1-7）：建立基礎 — 固定行動時間和觸發信號
+          第2週（Day 8-14）：深化習慣 — 增加難度和深度
+          第3週（Day 15-21）：內化整合 — 習慣成為自然
+        - 時間遞增：5分鐘 → 10分鐘 → 15分鐘
+        - 每週第7天設為「反思日」而非行動日
+        - 任務具體可行，避免模糊指令
+        - tip要結合《規劃最好的一年》理念給予鼓勵
 
-        請嚴格按照以下JSON格式返回，不要包含其他文字：
+        請嚴格按JSON格式返回，不要包含其他文字：
         {"title":"計畫標題","tasks":[{"day":1,"title":"任務標題","description":"任務描述","tip":"AI小建議"}]}
         """
 
@@ -648,9 +671,17 @@ final class AIService {
 
     /// Generate a daily AI tip for a specific challenge day
     func generateDailyTip(challengeId: String, dayNumber: Int, previousDays: [DailyChallengeTask], userId: String) async -> String {
+        let cacheKey = "\(challengeId)_\(dayNumber)"
+        if let cached = tipCache[cacheKey], Date().timeIntervalSince(cached.timestamp) < tipCacheExpiry {
+            return cached.tip
+        }
+
         let completedCount = previousDays.filter { $0.isCompleted }.count
         let prompt = "用戶正在進行\(dayNumber <= 7 ? "7天啟動" : "21天挑戰")第\(dayNumber)天，已連續完成\(completedCount)天。請給一句簡短鼓勵（20字以內），幫助用戶堅持下去。"
-        return await queryAIGateway(userId: userId, query: prompt)
+        let tip = await queryAIGateway(userId: userId, query: prompt)
+
+        tipCache[cacheKey] = (tip: tip, timestamp: Date())
+        return tip
     }
 
     // MARK: - JSON Parsing Helpers

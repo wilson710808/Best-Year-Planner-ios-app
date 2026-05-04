@@ -47,21 +47,23 @@
 ## ⚠️ 待完成
 
 ### 功能
-- [ ] StoreKit 真實 IAP 接入（目前升級按鈕為模擬）
-- [ ] 本地通知提醒（每日挑戰任務提醒）
+- [x] StoreKit 真實 IAP 接入（StoreKitService.swift）
+- [x] 本地通知提醒（ChallengeNotificationManager.swift）
+- [x] Dark Mode 自適應（ColorConstants + RootView preferredColorScheme）
+- [x] AI Prompt 優化（7天/21天結構化提示詞）
+- [x] AI Tip 快取機制（1小時過期）
 - [ ] Widget 支持（iOS 鎖屏顯示今日任務）
-- [ ] Dark Mode 完善
 
 ### 技術
-- [ ] Xcode 項目配置（新文件加入 .xcodeproj）
+- [x] Xcode 項目配置（所有80個.swift文件已加入）
 - [ ] 單元測試
 - [ ] UI 測試
 - [ ] App Store 截圖和描述
 
 ### AI 優化
-- [ ] AI 生成7天計畫的 prompt 優化
-- [ ] AI 生成21天挑戰的任務多樣化
-- [ ] 每日 AI tip 快取避免重複請求
+- [x] AI 生成7天計畫的 prompt 優化（漸進式：認知→行動→錨點）
+- [x] AI 生成21天挑戰的 prompt 優化（3循環：基礎→深化→內化）
+- [x] 每日 AI tip 快取避免重複請求
 
 ---
 

@@ -7,6 +7,8 @@
 	objects = {
 
 /* Begin PBXBuildFile section */
+		45EE73EA4B1D4472AE71C09E /* Date+Extensions.swift in Sources */ = {isa = PBXBuildFile; fileRef = F923CA55750A404F9D3FCA1B /* Date+Extensions.swift */; };
+		9FD13DCED6A44AE089A1DC08 /* View+Extensions.swift in Sources */ = {isa = PBXBuildFile; fileRef = AF9B1553E2FE484286B2C3F6 /* View+Extensions.swift */; };
 		2E44455901C24726AD945478 /* StoreKitService.swift in Sources */ = {isa = PBXBuildFile; fileRef = 25050A0AA4E8426388946BF7 /* StoreKitService.swift */; };
 		25B12A5B72DE42D79B093AF1 /* ChallengeNotificationManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = 863B6726A1454912A8CF66CD /* ChallengeNotificationManager.swift */; };
 		9D74DF6FA25B4E1AB47DAC3C /* Challenge.swift in Sources */ = {isa = PBXBuildFile; fileRef = F4CEAFCD506249C8BC92CAF2 /* Challenge.swift */; };
@@ -111,6 +113,8 @@
 /* End PBXContainerItemProxy section */
 
 /* Begin PBXFileReference section */
+		F923CA55750A404F9D3FCA1B /* Date+Extensions.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Date+Extensions.swift; sourceTree = "<group>"; };
+		AF9B1553E2FE484286B2C3F6 /* View+Extensions.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = View+Extensions.swift; sourceTree = "<group>"; };
 		25050A0AA4E8426388946BF7 /* StoreKitService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = StoreKitService.swift; sourceTree = "<group>"; };
 		863B6726A1454912A8CF66CD /* ChallengeNotificationManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ChallengeNotificationManager.swift; sourceTree = "<group>"; };
 		F4CEAFCD506249C8BC92CAF2 /* Challenge.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Challenge.swift; sourceTree = "<group>"; };
@@ -333,6 +337,8 @@
 		75EFCD0467707C0FDCF3F651 /* Best Year Planner */ = {
 			isa = PBXGroup;
 			children = (
+				F923CA55750A404F9D3FCA1B /* Date+Extensions.swift */,
+				AF9B1553E2FE484286B2C3F6 /* View+Extensions.swift */,
 				25050A0AA4E8426388946BF7 /* StoreKitService.swift */,
 				863B6726A1454912A8CF66CD /* ChallengeNotificationManager.swift */,
 				F4CEAFCD506249C8BC92CAF2 /* Challenge.swift */,
@@ -628,6 +634,8 @@
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				45EE73EA4B1D4472AE71C09E /* Date+Extensions.swift in Sources */,
+				9FD13DCED6A44AE089A1DC08 /* View+Extensions.swift in Sources */,
 				2E44455901C24726AD945478 /* StoreKitService.swift in Sources */,
 				25B12A5B72DE42D79B093AF1 /* ChallengeNotificationManager.swift in Sources */,
 				9D74DF6FA25B4E1AB47DAC3C /* Challenge.swift in Sources */,

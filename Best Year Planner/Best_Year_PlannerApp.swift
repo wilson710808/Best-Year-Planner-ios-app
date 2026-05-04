@@ -19,8 +19,8 @@ struct Best_Year_PlannerApp: App {
         let appearance = UINavigationBarAppearance()
         appearance.configureWithOpaqueBackground()
         appearance.backgroundColor = UIColor.systemBackground
-        appearance.titleTextAttributes = [.foregroundColor: UIColor(Color(hex: "2C3E50"))]
-        appearance.largeTitleTextAttributes = [.foregroundColor: UIColor(Color(hex: "2C3E50"))]
+        appearance.titleTextAttributes = [.foregroundColor: UIColor.label]
+        appearance.largeTitleTextAttributes = [.foregroundColor: UIColor.label]
 
         UINavigationBar.appearance().standardAppearance = appearance
         UINavigationBar.appearance().scrollEdgeAppearance = appearance
@@ -30,6 +30,14 @@ struct Best_Year_PlannerApp: App {
 
 struct RootView: View {
     @EnvironmentObject private var appState: AppState
+
+    private var preferredColorScheme: ColorScheme? {
+        switch appState.themeMode {
+        case .light: return .light
+        case .dark: return .dark
+        case .system: return nil
+        }
+    }
 
     var body: some View {
         Group {
@@ -43,6 +51,7 @@ struct RootView: View {
                 WelcomeView()
             }
         }
+        .preferredColorScheme(preferredColorScheme)
         .animation(.easeInOut, value: appState.isLoggedIn)
         .animation(.easeInOut, value: appState.isOnboardingCompleted)
     }

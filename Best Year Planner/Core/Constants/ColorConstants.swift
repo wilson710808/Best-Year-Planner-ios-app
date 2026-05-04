@@ -1,31 +1,48 @@
 import SwiftUI
 
 enum AppColors {
+    // Brand colors (same in light/dark)
     static let primary = Color(hex: "4A90D9")
     static let secondary = Color(hex: "7ED321")
     static let accent = Color(hex: "F5A623")
 
-    static let background = Color(hex: "F8F9FA")
-    static let cardBackground = Color.white
+    // Adaptive colors (auto-switch for light/dark)
+    static let background = Color(light: Color(hex: "F8F9FA"), dark: Color(hex: "1A1A2E"))
+    static let cardBackground = Color(light: Color.white, dark: Color(hex: "16213E"))
+    static let textPrimary = Color(light: Color(hex: "2C3E50"), dark: Color(hex: "FFFFFF"))
+    static let textSecondary = Color(light: Color(hex: "7F8C8D"), dark: Color(hex: "A0A0A0"))
+    static let divider = Color(light: Color(hex: "E0E0E0"), dark: Color(hex: "2C2C4A"))
+    static let disabled = Color(light: Color(hex: "BDC3C7"), dark: Color(hex: "4A4A6A"))
 
-    static let textPrimary = Color(hex: "2C3E50")
-    static let textSecondary = Color(hex: "7F8C8D")
-
-    static let divider = Color(hex: "E0E0E0")
-    static let disabled = Color(hex: "BDC3C7")
-
+    // Dimension colors (vibrant in both modes)
     static let careerDimension = Color(hex: "3498DB")
     static let relationshipDimension = Color(hex: "E74C8C")
     static let growthDimension = Color(hex: "27AE60")
 
+    // Semantic colors
     static let success = Color(hex: "27AE60")
     static let warning = Color(hex: "F39C12")
     static let error = Color(hex: "E74C3C")
 
+    // Keep legacy dark colors for reference
     static let darkBackground = Color(hex: "1A1A2E")
     static let darkCard = Color(hex: "16213E")
     static let darkTextPrimary = Color(hex: "FFFFFF")
     static let darkTextSecondary = Color(hex: "A0A0A0")
+}
+
+extension Color {
+    /// Create a color that adapts to light/dark mode
+    init(light: Color, dark: Color) {
+        self.init(UIColor { traitCollection in
+            switch traitCollection.userInterfaceStyle {
+            case .dark:
+                return UIColor(dark)
+            default:
+                return UIColor(light)
+            }
+        })
+    }
 }
 
 extension Color {
