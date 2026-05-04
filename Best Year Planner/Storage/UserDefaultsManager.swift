@@ -51,7 +51,7 @@ final class UserDefaultsManager {
         get {
             guard let rawValue = defaults.string(forKey: AppConstants.UserDefaultsKeys.appLanguage),
                   let language = AppLanguage(rawValue: rawValue) else {
-                return .traditionalChinese
+                return .simplifiedChinese  // 默認為簡體中文
             }
             return language
         }

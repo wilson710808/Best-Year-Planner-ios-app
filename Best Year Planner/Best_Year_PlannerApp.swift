@@ -3,6 +3,7 @@ import SwiftUI
 @main
 struct Best_Year_PlannerApp: App {
     @StateObject private var appState = AppState.shared
+    @StateObject private var localization = LocalizationManager.shared
 
     init() {
         configureAppearance()
@@ -12,6 +13,7 @@ struct Best_Year_PlannerApp: App {
         WindowGroup {
             RootView()
                 .environmentObject(appState)
+                .environmentObject(localization)
         }
     }
 

@@ -3,6 +3,8 @@ import SwiftUI
 struct RegisterView: View {
     @StateObject private var viewModel = AuthViewModel()
     @Environment(\.dismiss) private var dismiss
+    @EnvironmentObject private var localization: LocalizationManager
+    @State private var showLanguagePicker = false
 
     var body: some View {
         ZStack {
@@ -10,40 +12,61 @@ struct RegisterView: View {
 
             ScrollView {
                 VStack(spacing: 24) {
+                    // 語言選擇器（右上角）
+                    HStack {
+                        Spacer()
+                        Button {
+                            showLanguagePicker = true
+                        } label: {
+                            HStack(spacing: 4) {
+                                Image(systemName: "globe")
+                                Text(localization.currentLanguage.displayName)
+                                    .font(.subheadline)
+                            }
+                            .foregroundColor(AppColors.textSecondary)
+                            .padding(.horizontal, 12)
+                            .padding(.vertical, 6)
+                            .background(Color.secondary.opacity(0.1))
+                            .cornerRadius(8)
+                        }
+                    }
+                    .padding(.horizontal, 24)
+                    .padding(.top, 20)
+
                     VStack(spacing: 8) {
-                        Text(StringConstants.Auth.registerTitle)
+                        Text(localization.t("auth.register.title"))
                             .font(.largeTitle)
                             .fontWeight(.bold)
                             .foregroundColor(AppColors.textPrimary)
 
-                        Text("創建你的帳戶")
+                        Text(localization.t("auth.createAccount"))
                             .font(.body)
                             .foregroundColor(AppColors.textSecondary)
                     }
-                    .padding(.top, 40)
+                    .padding(.top, 20)
 
                     VStack(spacing: 16) {
                         CustomTextField(
-                            placeholder: StringConstants.Auth.accountPlaceholder,
+                            placeholder: localization.t("auth.account.placeholder"),
                             text: $viewModel.account,
                             icon: "person.fill"
                         )
 
                         CustomTextField(
-                            placeholder: StringConstants.Auth.nicknamePlaceholder,
+                            placeholder: localization.t("auth.nickname.placeholder"),
                             text: $viewModel.nickname,
                             icon: "person.text.rectangle"
                         )
 
                         CustomTextField(
-                            placeholder: StringConstants.Auth.passwordPlaceholder,
+                            placeholder: localization.t("auth.password.placeholder"),
                             text: $viewModel.password,
                             icon: "lock.fill",
                             isSecure: true
                         )
 
                         CustomTextField(
-                            placeholder: StringConstants.Auth.confirmPasswordPlaceholder,
+                            placeholder: localization.t("auth.confirmPassword.placeholder"),
                             text: $viewModel.confirmPassword,
                             icon: "lock.fill",
                             isSecure: true
@@ -52,12 +75,12 @@ struct RegisterView: View {
                     .padding(.horizontal, 24)
 
                     VStack(alignment: .leading, spacing: 8) {
-                        Text("性別（選填）")
+                        Text(localization.t("auth.gender.label"))
                             .font(.subheadline)
                             .foregroundColor(AppColors.textSecondary)
 
                         Picker("性別", selection: $viewModel.gender) {
-                            Text("請選擇").tag(Gender?.none)
+                            Text(localization.t("auth.selectGender")).tag(Gender?.none)
                             ForEach(Gender.allCases, id: \.self) { gender in
                                 Text(gender.displayName).tag(Gender?.some(gender))
                             }
@@ -67,12 +90,12 @@ struct RegisterView: View {
                     .padding(.horizontal, 24)
 
                     VStack(alignment: .leading, spacing: 8) {
-                        Text("出生年份（選填）")
+                        Text(localization.t("auth.birthYear.label"))
                             .font(.subheadline)
                             .foregroundColor(AppColors.textSecondary)
 
                         Picker("出生年份", selection: $viewModel.birthYear) {
-                            Text("請選擇").tag(Int?.none)
+                            Text(localization.t("auth.selectGender")).tag(Int?.none)
                             ForEach((1950...2025).reversed(), id: \.self) { year in
                                 Text("\(year)").tag(Int?.some(year))
                             }
@@ -96,7 +119,7 @@ struct RegisterView: View {
                                 .background(AppColors.primary)
                                 .cornerRadius(12)
                         } else {
-                            Text(StringConstants.Auth.registerButton)
+                            Text(localization.t("auth.register.button"))
                                 .primaryButtonStyle()
                         }
                     }
@@ -107,10 +130,10 @@ struct RegisterView: View {
                     Spacer()
 
                     HStack {
-                        Text(StringConstants.Auth.hasAccount)
+                        Text(localization.t("auth.hasAccount"))
                             .foregroundColor(AppColors.textSecondary)
                         NavigationLink(destination: LoginView()) {
-                            Text(StringConstants.Auth.signIn)
+                            Text(localization.t("auth.signIn"))
                                 .foregroundColor(AppColors.primary)
                                 .fontWeight(.semibold)
                         }
@@ -121,10 +144,13 @@ struct RegisterView: View {
             }
         }
         .navigationBarTitleDisplayMode(.inline)
-        .alert("錯誤", isPresented: $viewModel.isShowingError) {
-            Button("確定", role: .cancel) { }
+        .alert(localization.t("common.error"), isPresented: $viewModel.isShowingError) {
+            Button(localization.t("common.confirm"), role: .cancel) { }
         } message: {
-            Text(viewModel.errorMessage ?? "發生未知錯誤")
+            Text(viewModel.errorMessage ?? localization.t("error.databaseError"))
+        }
+        .sheet(isPresented: $showLanguagePicker) {
+            LanguageSelectionSheet()
         }
     }
 }

@@ -3,6 +3,8 @@ import SwiftUI
 struct LoginView: View {
     @StateObject private var viewModel = AuthViewModel()
     @Environment(\.dismiss) private var dismiss
+    @EnvironmentObject private var localization: LocalizationManager
+    @State private var showLanguagePicker = false
 
     var body: some View {
         ZStack {
@@ -10,27 +12,48 @@ struct LoginView: View {
 
             ScrollView {
                 VStack(spacing: 24) {
+                    // 語言選擇器（右上角）
+                    HStack {
+                        Spacer()
+                        Button {
+                            showLanguagePicker = true
+                        } label: {
+                            HStack(spacing: 4) {
+                                Image(systemName: "globe")
+                                Text(localization.currentLanguage.displayName)
+                                    .font(.subheadline)
+                            }
+                            .foregroundColor(AppColors.textSecondary)
+                            .padding(.horizontal, 12)
+                            .padding(.vertical, 6)
+                            .background(Color.secondary.opacity(0.1))
+                            .cornerRadius(8)
+                        }
+                    }
+                    .padding(.horizontal, 24)
+                    .padding(.top, 20)
+
                     VStack(spacing: 8) {
-                        Text(StringConstants.Auth.loginTitle)
+                        Text(localization.t("auth.login.title"))
                             .font(.largeTitle)
                             .fontWeight(.bold)
                             .foregroundColor(AppColors.textPrimary)
 
-                        Text("歡迎回來！")
+                        Text(localization.t("auth.welcome.back"))
                             .font(.body)
                             .foregroundColor(AppColors.textSecondary)
                     }
-                    .padding(.top, 40)
+                    .padding(.top, 20)
 
                     VStack(spacing: 16) {
                         CustomTextField(
-                            placeholder: StringConstants.Auth.accountPlaceholder,
+                            placeholder: localization.t("auth.account.placeholder"),
                             text: $viewModel.account,
                             icon: "person.fill"
                         )
 
                         CustomTextField(
-                            placeholder: StringConstants.Auth.passwordPlaceholder,
+                            placeholder: localization.t("auth.password.placeholder"),
                             text: $viewModel.password,
                             icon: "lock.fill",
                             isSecure: true
@@ -52,7 +75,7 @@ struct LoginView: View {
                                 .background(AppColors.primary)
                                 .cornerRadius(12)
                         } else {
-                            Text(StringConstants.Auth.loginButton)
+                            Text(localization.t("auth.login.button"))
                                 .primaryButtonStyle()
                         }
                     }
@@ -62,7 +85,7 @@ struct LoginView: View {
 
                     Button {
                     } label: {
-                        Text(StringConstants.Auth.forgotPasswordButton)
+                        Text(localization.t("auth.forgotPassword.button"))
                             .font(.subheadline)
                             .foregroundColor(AppColors.primary)
                     }
@@ -70,10 +93,10 @@ struct LoginView: View {
                     Spacer()
 
                     HStack {
-                        Text(StringConstants.Auth.noAccount)
+                        Text(localization.t("auth.noAccount"))
                             .foregroundColor(AppColors.textSecondary)
                         NavigationLink(destination: RegisterView()) {
-                            Text(StringConstants.Auth.signUp)
+                            Text(localization.t("auth.signUp"))
                                 .foregroundColor(AppColors.primary)
                                 .fontWeight(.semibold)
                         }
@@ -84,10 +107,52 @@ struct LoginView: View {
             }
         }
         .navigationBarTitleDisplayMode(.inline)
-        .alert("錯誤", isPresented: $viewModel.isShowingError) {
-            Button("確定", role: .cancel) { }
+        .alert(localization.t("common.error"), isPresented: $viewModel.isShowingError) {
+            Button(localization.t("common.confirm"), role: .cancel) { }
         } message: {
-            Text(viewModel.errorMessage ?? "發生未知錯誤")
+            Text(viewModel.errorMessage ?? localization.t("error.databaseError"))
         }
+        .sheet(isPresented: $showLanguagePicker) {
+            LanguageSelectionSheet()
+        }
+    }
+}
+
+// MARK: - 語言選擇 Sheet
+struct LanguageSelectionSheet: View {
+    @EnvironmentObject private var localization: LocalizationManager
+    @Environment(\.dismiss) private var dismiss
+
+    var body: some View {
+        NavigationView {
+            List {
+                ForEach(AppLanguage.allCases, id: \.self) { language in
+                    Button {
+                        localization.setLanguage(language)
+                        dismiss()
+                    } label: {
+                        HStack {
+                            Text(language.displayName)
+                                .foregroundColor(AppColors.textPrimary)
+                            Spacer()
+                            if localization.currentLanguage == language {
+                                Image(systemName: "checkmark")
+                                    .foregroundColor(AppColors.primary)
+                            }
+                        }
+                    }
+                }
+            }
+            .navigationTitle(localization.t("settings.language"))
+            .navigationBarTitleDisplayMode(.inline)
+            .toolbar {
+                ToolbarItem(placement: .navigationBarTrailing) {
+                    Button(localization.t("common.cancel")) {
+                        dismiss()
+                    }
+                }
+            }
+        }
+        .presentationDetents([.height(CGFloat(AppLanguage.allCases.count * 60 + 100))])
     }
 }

@@ -2,13 +2,13 @@ import SwiftUI
 
 struct SettingsView: View {
     @StateObject private var viewModel = SettingsViewModel()
-    @StateObject private var localizationManager = LocalizationManager.shared
+    @EnvironmentObject private var localizationManager: LocalizationManager
     @EnvironmentObject private var appState: AppState
 
     var body: some View {
         NavigationStack {
             List {
-                Section("個人資料") {
+                Section(localizationManager.t("settings.profile")) {
                     NavigationLink(destination: ProfileEditView(viewModel: viewModel)) {
                         HStack {
                             Image(systemName: "person.circle.fill")
@@ -16,7 +16,7 @@ struct SettingsView: View {
                                 .font(.title)
 
                             VStack(alignment: .leading) {
-                                Text(viewModel.currentUser?.nickname ?? "用戶")
+                                Text(viewModel.currentUser?.nickname ?? localizationManager.t("settings.profile"))
                                     .font(.headline)
                                     .foregroundColor(AppColors.textPrimary)
 
@@ -28,8 +28,8 @@ struct SettingsView: View {
                     }
                 }
 
-                Section("語言") {
-                    Picker("語言", selection: $localizationManager.currentLanguage) {
+                Section(localizationManager.t("settings.language")) {
+                    Picker(localizationManager.t("settings.language"), selection: $localizationManager.currentLanguage) {
                         ForEach(AppLanguage.allCases, id: \.self) { language in
                             Text(language.displayName).tag(language)
                         }
@@ -38,9 +38,9 @@ struct SettingsView: View {
                     .labelsHidden()
                 }
 
-                Section("通知") {
+                Section(localizationManager.t("settings.notification")) {
                     Toggle(isOn: $viewModel.notificationEnabled) {
-                        Label("打卡提醒", systemImage: "bell.fill")
+                        Label(localizationManager.t("settings.checkInReminder"), systemImage: "bell.fill")
                     }
                     .onChange(of: viewModel.notificationEnabled) {
                         viewModel.setNotificationEnabled(viewModel.notificationEnabled)
@@ -48,7 +48,7 @@ struct SettingsView: View {
 
                     if viewModel.notificationEnabled {
                         DatePicker(
-                            "每日提醒時間",
+                            localizationManager.t("settings.dailyReminderTime"),
                             selection: $viewModel.dailyReminderTime,
                             displayedComponents: .hourAndMinute
                         )
@@ -58,8 +58,8 @@ struct SettingsView: View {
                     }
                 }
 
-                Section("外觀") {
-                    Picker("主題模式", selection: $viewModel.themeMode) {
+                Section(localizationManager.t("settings.appearance")) {
+                    Picker(localizationManager.t("settings.themeMode"), selection: $viewModel.themeMode) {
                         ForEach(ThemeMode.allCases, id: \.self) { mode in
                             Text(mode.displayName).tag(mode)
                         }
@@ -69,11 +69,11 @@ struct SettingsView: View {
                     }
                 }
 
-                Section("數據管理") {
+                Section(localizationManager.t("settings.dataManagement")) {
                     Button(action: {
                         viewModel.syncData()
                     }) {
-                        Label("同步數據", systemImage: "arrow.triangle.2.circlepath")
+                        Label(localizationManager.t("settings.syncData"), systemImage: "arrow.triangle.2.circlepath")
                     }
 
                     Button(action: {
@@ -81,24 +81,24 @@ struct SettingsView: View {
                             print("Exported to: \(url)")
                         }
                     }) {
-                        Label("導出數據", systemImage: "square.and.arrow.up")
+                        Label(localizationManager.t("settings.exportData"), systemImage: "square.and.arrow.up")
                     }
                 }
 
-                Section("關於") {
+                Section(localizationManager.t("settings.about")) {
                     HStack {
-                        Text("版本")
+                        Text(localizationManager.t("settings.version"))
                         Spacer()
                         Text("1.0.0")
                             .foregroundColor(AppColors.textSecondary)
                     }
 
                     NavigationLink(destination: AboutView()) {
-                        Text("關於App")
+                        Text(localizationManager.t("settings.aboutApp"))
                     }
 
-                    NavigationLink(destination: Text("書籍核心觀念")) {
-                        Text("《規劃最好的一年》核心原則")
+                    NavigationLink(destination: Text(localizationManager.t("settings.bookCorePrinciples"))) {
+                        Text(localizationManager.t("settings.bookCorePrinciples"))
                     }
                 }
 
@@ -108,21 +108,21 @@ struct SettingsView: View {
                     }) {
                         HStack {
                             Spacer()
-                            Text(StringConstants.Settings.logout)
+                            Text(localizationManager.t("settings.logout"))
                                 .foregroundColor(AppColors.error)
                             Spacer()
                         }
                     }
                 }
             }
-            .navigationTitle(StringConstants.Settings.title)
-            .alert("確認登出", isPresented: $viewModel.showLogoutConfirmation) {
-                Button("取消", role: .cancel) {}
-                Button("登出", role: .destructive) {
+            .navigationTitle(localizationManager.t("settings.title"))
+            .alert(localizationManager.t("common.confirm"), isPresented: $viewModel.showLogoutConfirmation) {
+                Button(localizationManager.t("common.cancel"), role: .cancel) {}
+                Button(localizationManager.t("settings.logout"), role: .destructive) {
                     viewModel.logout()
                 }
             } message: {
-                Text("你確定要登出嗎？")
+                Text(localizationManager.t("common.confirm"))
             }
             .onAppear {
                 viewModel.loadSettings()
