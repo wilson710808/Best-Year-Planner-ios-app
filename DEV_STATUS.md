@@ -57,7 +57,7 @@
 ### 技術
 - [x] Xcode 項目配置（所有80個.swift文件已加入）
 - [x] 單元測試（7個測試文件，覆蓋 Challenge/Subscription/Goal/Onboarding/Questionnaire/UserDefaults/ChallengeViewModel）
-- [ ] UI 測試
+- [x] UI 測試（13個測試案例，覆蓋引導流程/Tab導航/挑戰流程/訂閱/AI教練/深色模式/性能）
 - [x] App Store 截圖和描述文案 (AppStore/README_AppStore.md)
 
 ### AI 優化
