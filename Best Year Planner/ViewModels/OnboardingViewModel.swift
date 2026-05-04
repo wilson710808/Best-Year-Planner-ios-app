@@ -72,48 +72,7 @@ final class OnboardingViewModel: ObservableObject {
     }
 
     private func parsePlanFromResponse(_ response: String) -> SevenDayLaunchPlan? {
-        // Extract JSON from response (AI might wrap it in markdown)
-        var jsonString = response
-
-        // Try to extract JSON from markdown code block
-        if let range = response.range(of: "```json") {
-            let start = response.index(range.upperBound, offsetBy: 0)
-            if let endRange = response[start...].range(of: "```") {
-                jsonString = String(response[start..<endRange.lowerBound])
-            }
-        } else if let range = response.range(of: "```") {
-            let start = response.index(range.upperBound, offsetBy: 0)
-            if let endRange = response[start...].range(of: "```") {
-                jsonString = String(response[start..<endRange.lowerBound])
-            }
-        }
-
-        jsonString = jsonString.trimmingCharacters(in: .whitespacesAndNewlines)
-
-        guard let jsonData = jsonString.data(using: .utf8),
-              let json = try? JSONSerialization.jsonObject(with: jsonData) as? [String: Any],
-              let title = json["title"] as? String,
-              let tasksArray = json["tasks"] as? [[String: Any]] else {
-            return nil
-        }
-
-        var tasks: [DailyChallengeTask] = []
-        for taskDict in tasksArray {
-            let day = taskDict["day"] as? Int ?? (tasks.count + 1)
-            let title = taskDict["title"] as? String ?? "第\(day)天任務"
-            let desc = taskDict["description"] as? String ?? ""
-            let tip = taskDict["tip"] as? String
-
-            tasks.append(DailyChallengeTask(
-                dayNumber: day,
-                title: title,
-                description: desc,
-                estimatedMinutes: AppConstants.Challenge.defaultTaskMinutes,
-                aiTip: tip
-            ))
-        }
-
-        return SevenDayLaunchPlan(title: title, tasks: tasks)
+        return JSONParser.parseLaunchPlan(from: response)
     }
 
     private func generateFallbackPlan() -> SevenDayLaunchPlan {
