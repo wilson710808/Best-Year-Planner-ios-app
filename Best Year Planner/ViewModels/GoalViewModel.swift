@@ -40,7 +40,15 @@ final class GoalViewModel: ObservableObject {
         isLoading = false
     }
 
+    @Published var showGoalLimitWarning = false
+
     func createGoal(_ goal: Goal) -> Bool {
+        // 目標上限提醒：超過5個活躍目標時警告
+        let activeCount = goals.filter { $0.status == .active }.count
+        if activeCount >= 5 {
+            showGoalLimitWarning = true
+        }
+
         let result = goalService.createGoal(goal)
         switch result {
         case .success:

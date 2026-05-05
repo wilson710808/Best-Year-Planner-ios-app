@@ -32,6 +32,32 @@ struct DashboardView: View {
                     .padding(.horizontal)
                     .padding(.top, 16)
 
+                    // Motivation Reminder (if inactive 3+ days)
+                    if let motivationCard = getMotivationReminder() {
+                        VStack(alignment: .leading, spacing: 8) {
+                            HStack(spacing: 8) {
+                                Image(systemName: "heart.circle.fill")
+                                    .foregroundColor(AppColors.accent)
+                                Text("你的動機提醒")
+                                    .font(.caption)
+                                    .fontWeight(.medium)
+                                    .foregroundColor(AppColors.accent)
+                            }
+                            Text(motivationCard)
+                                .font(.subheadline)
+                                .foregroundColor(AppColors.textPrimary)
+                                .italic()
+                        }
+                        .padding()
+                        .frame(maxWidth: .infinity, alignment: .leading)
+                        .background(
+                            LinearGradient(colors: [AppColors.accent.opacity(0.05), AppColors.primary.opacity(0.05)],
+                                           startPoint: .leading, endPoint: .trailing)
+                        )
+                        .cornerRadius(12)
+                        .padding(.horizontal)
+                    }
+
                     // Active Challenge Card
                     if let challenge = challengeViewModel.currentChallenge {
                         ChallengeCardView(
@@ -76,6 +102,58 @@ struct DashboardView: View {
                     }
                     .padding(.horizontal)
 
+                    // Today's Belief Reminder
+                    NavigationLink(destination: PastReviewView()) {
+                        HStack(spacing: 12) {
+                            Image(systemName: "lightbulb.fill")
+                                .foregroundColor(AppColors.accent)
+                                .font(.title3)
+                            VStack(alignment: .leading, spacing: 2) {
+                                Text("總結過去，規劃未來")
+                                    .font(.subheadline)
+                                    .fontWeight(.medium)
+                                    .foregroundColor(AppColors.textPrimary)
+                                Text("回顧去年的成就與教訓")
+                                    .font(.caption)
+                                    .foregroundColor(AppColors.textSecondary)
+                            }
+                            Spacer()
+                            Image(systemName: "chevron.right")
+                                .foregroundColor(AppColors.textSecondary)
+                                .font(.caption)
+                        }
+                        .padding()
+                        .background(AppColors.cardBackground)
+                        .cornerRadius(12)
+                    }
+                    .padding(.horizontal)
+
+                    // Abandon List Entry
+                    NavigationLink(destination: AbandonListView()) {
+                        HStack(spacing: 12) {
+                            Image(systemName: "scissors")
+                                .foregroundColor(AppColors.error)
+                                .font(.title3)
+                            VStack(alignment: .leading, spacing: 2) {
+                                Text("更少但更好")
+                                    .font(.subheadline)
+                                    .fontWeight(.medium)
+                                    .foregroundColor(AppColors.textPrimary)
+                                Text("記錄你決定不做的事")
+                                    .font(.caption)
+                                    .foregroundColor(AppColors.textSecondary)
+                            }
+                            Spacer()
+                            Image(systemName: "chevron.right")
+                                .foregroundColor(AppColors.textSecondary)
+                                .font(.caption)
+                        }
+                        .padding()
+                        .background(AppColors.cardBackground)
+                        .cornerRadius(12)
+                    }
+                    .padding(.horizontal)
+
                     // Dimension Progress
                     HStack(spacing: 12) {
                         MiniDimensionProgress(dimension: .career, progress: viewModel.careerProgress)
@@ -109,6 +187,23 @@ struct DashboardView: View {
             }
             .background(AppColors.background)
             .onAppear {
+                    viewModel.loadDashboardData()
+                    challengeViewModel.loadChallenges()
+                }
+
+    private func getMotivationReminder() -> String? {
+        let tasks = TaskService.shared.getAllTasks().filter { $0.status == .inProgress || $0.status == .pending }
+        for task in tasks {
+            if let reminder = CheckInService.shared.getMotivationReminder(taskId: task.id) {
+                return reminder
+            }
+        }
+        return nil
+    }
+
+    private var onAppearBackup: Bool { true }
+
+    private func _onAppear() {
                 viewModel.loadDashboardData()
                 challengeViewModel.loadChallenges()
             }

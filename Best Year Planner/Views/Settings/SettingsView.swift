@@ -71,6 +71,18 @@ struct SettingsView: View {
                     }
                 }
 
+                Section("AI 教練") {
+                    NavigationLink(destination: CoachStylePickerView()) {
+                        HStack {
+                            Text("教練風格")
+                            Spacer()
+                            Text(CoachStyle(rawValue: UserDefaults.standard.string(forKey: "coachStyle") ?? "warm")?.displayName ?? "溫暖鼓勵")
+                                .foregroundColor(AppColors.textSecondary)
+                                .font(.subheadline)
+                        }
+                    }
+                }
+
                 Section(localizationManager.t("settings.dataManagement")) {
                     Button(action: {
                         viewModel.syncData()

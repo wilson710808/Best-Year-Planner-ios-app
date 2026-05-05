@@ -3,10 +3,8 @@ import WidgetKit
 
 final class UserDefaultsManager {
     static let shared = UserDefaultsManager()
-
     private let defaults = UserDefaults.standard
     private let appGroupSuiteName = "group.com.bestyearplanner"
-
     private init() {}
 
     var isFirstLaunch: Bool {
@@ -25,10 +23,7 @@ final class UserDefaultsManager {
     }
 
     var themeMode: ThemeMode {
-        get {
-            let rawValue = defaults.integer(forKey: AppConstants.UserDefaultsKeys.themeMode)
-            return ThemeMode(rawValue: rawValue) ?? .system
-        }
+        get { ThemeMode(rawValue: defaults.integer(forKey: AppConstants.UserDefaultsKeys.themeMode)) ?? .system }
         set { defaults.set(newValue.rawValue, forKey: AppConstants.UserDefaultsKeys.themeMode) }
     }
 
@@ -50,21 +45,18 @@ final class UserDefaultsManager {
     var appLanguage: AppLanguage {
         get {
             guard let rawValue = defaults.string(forKey: AppConstants.UserDefaultsKeys.appLanguage),
-                  let language = AppLanguage(rawValue: rawValue) else {
-                return .simplifiedChinese  // 默認為簡體中文
-            }
+                  let language = AppLanguage(rawValue: rawValue) else { return .simplifiedChinese }
             return language
         }
         set { defaults.set(newValue.rawValue, forKey: AppConstants.UserDefaultsKeys.appLanguage) }
     }
 
     // MARK: - Subscription State
+
     var subscriptionState: SubscriptionState {
         get {
             guard let data = defaults.data(forKey: AppConstants.UserDefaultsKeys.subscriptionTier),
-                  let state = try? JSONDecoder().decode(SubscriptionState.self, from: data) else {
-                return SubscriptionState()
-            }
+                  let state = try? JSONDecoder().decode(SubscriptionState.self, from: data) else { return SubscriptionState() }
             return state
         }
         set {
@@ -74,13 +66,41 @@ final class UserDefaultsManager {
         }
     }
 
+    // MARK: - Subscription Details（訂閱過期降級 + 試用期）
+
+    var subscriptionExpirationDate: Date? {
+        get { (defaults.object(forKey: "subscriptionExpirationDate") as? Double).map { Date(timeIntervalSince1970: $0) } }
+        set {
+            if let value = newValue {
+                defaults.set(value.timeIntervalSince1970, forKey: "subscriptionExpirationDate")
+            } else {
+                defaults.removeObject(forKey: "subscriptionExpirationDate")
+            }
+        }
+    }
+
+    var isInFreeTrial: Bool {
+        get { defaults.bool(forKey: "isInFreeTrial") }
+        set { defaults.set(newValue, forKey: "isInFreeTrial") }
+    }
+
+    var freeTrialEndDate: Date? {
+        get { (defaults.object(forKey: "freeTrialEndDate") as? Double).map { Date(timeIntervalSince1970: $0) } }
+        set {
+            if let value = newValue {
+                defaults.set(value.timeIntervalSince1970, forKey: "freeTrialEndDate")
+            } else {
+                defaults.removeObject(forKey: "freeTrialEndDate")
+            }
+        }
+    }
+
     // MARK: - Onboarding Answers
+
     var onboardingAnswers: OnboardingAnswers? {
         get {
             guard let data = defaults.data(forKey: AppConstants.UserDefaultsKeys.onboardingAnswers),
-                  let answers = try? JSONDecoder().decode(OnboardingAnswers.self, from: data) else {
-                return nil
-            }
+                  let answers = try? JSONDecoder().decode(OnboardingAnswers.self, from: data) else { return nil }
             return answers
         }
         set {
@@ -91,6 +111,8 @@ final class UserDefaultsManager {
             }
         }
     }
+
+    // MARK: - Auth (Keychain)
 
     var currentUserId: String? {
         get { KeychainManager.shared.readString(forKey: AppConstants.KeychainKeys.userId) }
@@ -114,6 +136,7 @@ final class UserDefaultsManager {
         }
     }
 
+    /// 僅用於安全清理，不用於登入驗證
     var savedPassword: String? {
         get { KeychainManager.shared.readString(forKey: AppConstants.KeychainKeys.password) }
         set {
@@ -145,15 +168,14 @@ final class UserDefaultsManager {
     }
 
     // MARK: - Widget Sync
-    
+
     /// Sync today's task to widget via App Group UserDefaults
     func syncTodayTaskToWidget(task: DailyChallengeTask, dayNumber: Int, totalDays: Int, dimension: GoalDimension) {
         guard let appGroupDefaults = UserDefaults(suiteName: appGroupSuiteName) else {
-            print("Error: Could not access app group UserDefaults")
+            AppLogger.log("Could not access app group UserDefaults", category: AppLogger.general, level: .error)
             return
         }
-        
-        // Create JSON manually to avoid type sharing issues with widget extension
+
         let taskDict: [String: Any] = [
             "taskTitle": task.title,
             "taskDescription": task.description,
@@ -164,20 +186,20 @@ final class UserDefaultsManager {
             "isCompleted": task.isCompleted,
             "updatedAt": ISO8601DateFormatter().string(from: Date())
         ]
-        
+
         do {
             let jsonData = try JSONSerialization.data(withJSONObject: taskDict, options: [])
             let jsonString = String(data: jsonData, encoding: .utf8)
             appGroupDefaults.set(jsonString, forKey: "todayTask")
             appGroupDefaults.synchronize()
-            
-            // Reload widget timelines
             WidgetCenter.shared.reloadAllTimelines()
         } catch {
-            print("Error encoding today task data for widget: \(error)")
+            AppLogger.log("Error encoding today task data for widget: \(error)", category: AppLogger.general, level: .error)
         }
     }
 }
+
+// MARK: - Theme Mode
 
 enum ThemeMode: Int, CaseIterable {
     case light = 0

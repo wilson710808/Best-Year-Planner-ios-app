@@ -65,8 +65,8 @@ final class AnalyticsService {
         var goalTitle: String
         var dimension: GoalDimension
         var createdAt: Date
-        var completedAt: Date?
-        var completionDays: Int?    // 從創建到完成的天數
+        var completedAt: Date?     // 使用 updatedAt 當 status == .completed
+        var completionDays: Int?
         var taskCompletionRate: Double
     }
 
@@ -79,9 +79,10 @@ final class AnalyticsService {
             let completedTasks = goalTasks.filter { $0.status == .completed }
             let rate = goalTasks.isEmpty ? 0 : Double(completedTasks.count) / Double(goalTasks.count)
 
+            let completedAt: Date? = goal.status == .completed ? goal.updatedAt : nil
             let completionDays: Int? = {
-                guard let completedAt = goal.completedAt else { return nil }
-                let days = Calendar.current.dateComponents([.day], from: goal.createdAt, to: completedAt).day
+                guard let completed = completedAt else { return nil }
+                let days = Calendar.current.dateComponents([.day], from: goal.createdAt, to: completed).day
                 return days
             }()
 
@@ -90,7 +91,7 @@ final class AnalyticsService {
                 goalTitle: goal.title,
                 dimension: goal.dimension,
                 createdAt: goal.createdAt,
-                completedAt: goal.completedAt,
+                completedAt: completedAt,
                 completionDays: completionDays,
                 taskCompletionRate: rate
             )
@@ -117,7 +118,7 @@ final class AnalyticsService {
         let checkIns = CheckInService.shared.getAllCheckIns()
         let calendar = Calendar.current
 
-        return tasks.filter { $0.status == .active || $0.status == .completed }.map { task in
+        return tasks.filter { $0.status == .inProgress || $0.status == .completed }.map { task in
             let taskCheckIns = checkIns.filter { $0.taskId == task.id }
             let completed = taskCheckIns.filter { $0.status == .completed }
 

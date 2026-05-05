@@ -148,7 +148,7 @@ final class AIService: AIProvider, Sendable {
     public func getCoachResponse(userId: String, query: String, conversationHistory: [AIMessage]) async -> String {
         let systemMessage: [String: String] = [
             "role": "system",
-            "content": BeliefTransformationPrompts.coachSystemPrompt
+            "content": BeliefTransformationPrompts.coachSystemPrompt + "\n\n" + (CoachStyle(rawValue: UserDefaults.standard.string(forKey: "coachStyle") ?? "warm")?.systemPromptSuffix ?? CoachStyle.warm.systemPromptSuffix)
         ]
         // 將對話歷史轉換為 messages 陣列
         var messagesArray: [[String: String]] = [systemMessage]
@@ -558,7 +558,7 @@ final class AIService: AIProvider, Sendable {
 
         let quarterlyTask1 = Task(
             goalId: goal.id,
-            title: "制定\(Date().adding(months: 3).formatted("yyyy年QQQ"))季度計劃",
+            title: "制定第\(Calendar.current.component(.month, from: Date().adding(months: 3)))月季度計劃",
             description: "將年度目標細化為季度里程碑",
             priority: .high,
             deadline: Date().adding(months: 3)
@@ -567,7 +567,7 @@ final class AIService: AIProvider, Sendable {
 
         let quarterlyTask2 = Task(
             goalId: goal.id,
-            title: "制定\(Date().adding(months: 6).formatted("yyyy年QQQ"))季度計劃",
+            title: "制定第\(Calendar.current.component(.month, from: Date().adding(months: 6)))月季度計劃",
             description: "持續追蹤並調整目標方向",
             priority: .medium,
             deadline: Date().adding(months: 6)

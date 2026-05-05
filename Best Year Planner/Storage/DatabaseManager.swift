@@ -4,7 +4,7 @@ import SQLite3
 final class DatabaseManager {
     static let shared = DatabaseManager()
 
-    private var db: OpaquePointer?
+    var db: OpaquePointer?
     private let dbPath: String
 
     private init() {
@@ -213,6 +213,101 @@ final class DatabaseManager {
         );
         """
         executeSQL(createGroupActivitiesTable)
+
+        let createYearlyReviewsTable = """
+        CREATE TABLE IF NOT EXISTS yearly_reviews (
+            id TEXT PRIMARY KEY,
+            year INTEGER NOT NULL,
+            top_achievements TEXT,
+            regrets TEXT,
+            lessons_learned TEXT,
+            ai_report TEXT,
+            created_at REAL NOT NULL
+        );
+        """
+        executeSQL(createYearlyReviewsTable)
+
+        let createGoalMotivationsTable = """
+        CREATE TABLE IF NOT EXISTS goal_motivations (
+            id TEXT PRIMARY KEY,
+            goal_id TEXT NOT NULL,
+            whys TEXT,
+            ai_motivation_card TEXT,
+            created_at REAL NOT NULL,
+            FOREIGN KEY (goal_id) REFERENCES goals(id)
+        );
+        """
+        executeSQL(createGoalMotivationsTable)
+
+        let createSMARTERScoresTable = """
+        CREATE TABLE IF NOT EXISTS smarter_scores (
+            id TEXT PRIMARY KEY,
+            goal_id TEXT NOT NULL,
+            specific INTEGER DEFAULT 5,
+            measurable INTEGER DEFAULT 5,
+            actionable INTEGER DEFAULT 5,
+            risky INTEGER DEFAULT 5,
+            time_keyed INTEGER DEFAULT 5,
+            exciting INTEGER DEFAULT 5,
+            relevant INTEGER DEFAULT 5,
+            ai_suggestions TEXT,
+            created_at REAL NOT NULL,
+            FOREIGN KEY (goal_id) REFERENCES goals(id)
+        );
+        """
+        executeSQL(createSMARTERScoresTable)
+
+        let createGoalIndicatorsTable = """
+        CREATE TABLE IF NOT EXISTS goal_indicators (
+            id TEXT PRIMARY KEY,
+            goal_id TEXT NOT NULL,
+            type TEXT NOT NULL,
+            title TEXT NOT NULL,
+            description TEXT,
+            target_value REAL,
+            current_value REAL,
+            unit TEXT,
+            created_at REAL NOT NULL,
+            FOREIGN KEY (goal_id) REFERENCES goals(id)
+        );
+        """
+        executeSQL(createGoalIndicatorsTable)
+
+        let createAbandonItemsTable = """
+        CREATE TABLE IF NOT EXISTS abandon_items (
+            id TEXT PRIMARY KEY,
+            title TEXT NOT NULL,
+            reason TEXT,
+            freed_up_time TEXT,
+            created_at REAL NOT NULL
+        );
+        """
+        executeSQL(createAbandonItemsTable)
+
+        let createMilestonesTable = """
+        CREATE TABLE IF NOT EXISTS milestones (
+            id TEXT PRIMARY KEY,
+            goal_id TEXT,
+            title TEXT NOT NULL,
+            description TEXT,
+            achieved_at REAL NOT NULL,
+            category TEXT,
+            created_at REAL NOT NULL,
+            FOREIGN KEY (goal_id) REFERENCES goals(id)
+        );
+        """
+        executeSQL(createMilestonesTable)
+
+        let createOnboardingDataTable = """
+        CREATE TABLE IF NOT EXISTS onboarding_data (
+            user_id TEXT NOT NULL,
+            key TEXT NOT NULL,
+            data BLOB,
+            updated_at REAL NOT NULL,
+            PRIMARY KEY (user_id, key)
+        );
+        """
+        executeSQL(createOnboardingDataTable)
     }
 
     private func executeSQL(_ sql: String) {
@@ -1069,6 +1164,12 @@ final class DatabaseManager {
         "CREATE INDEX IF NOT EXISTS idx_growth_groups_admin ON growth_groups(admin_id)",
         "CREATE INDEX IF NOT EXISTS idx_group_activities_group ON group_activities(group_id)",
         "CREATE INDEX IF NOT EXISTS idx_group_activities_type ON group_activities(activity_type)",
+            "CREATE INDEX IF NOT EXISTS idx_yearly_reviews_year ON yearly_reviews(year)",
+            "CREATE INDEX IF NOT EXISTS idx_goal_motivations_goal ON goal_motivations(goal_id)",
+            "CREATE INDEX IF NOT EXISTS idx_smarter_scores_goal ON smarter_scores(goal_id)",
+            "CREATE INDEX IF NOT EXISTS idx_goal_indicators_goal ON goal_indicators(goal_id)",
+            "CREATE INDEX IF NOT EXISTS idx_goal_indicators_type ON goal_indicators(type)",
+            "CREATE INDEX IF NOT EXISTS idx_milestones_achieved ON milestones(achieved_at)",
             "CREATE INDEX IF NOT EXISTS idx_daily_challenge_tasks_challenge ON daily_challenge_tasks(challenge_id)",
             "CREATE INDEX IF NOT EXISTS idx_daily_challenge_tasks_challenge_day ON daily_challenge_tasks(challenge_id, day_number)"
         ]
@@ -1124,20 +1225,53 @@ final class DatabaseManager {
             sqlite3_finalize(stmt)
         }
 
-        // 將現有數據綁定到當前用戶
+        // 將現有數據綁定到當前用戶（參數化查詢防止 SQL 注入）
         if let userId = UserDefaultsManager.shared.currentUserId {
             let updateSQLs = [
-                "UPDATE goals SET user_id = '\(userId)' WHERE user_id IS NULL",
-                "UPDATE tasks SET user_id = '\(userId)' WHERE user_id IS NULL",
-                "UPDATE challenges SET user_id = '\(userId)' WHERE user_id IS NULL",
-                "UPDATE check_ins SET user_id = '\(userId)' WHERE user_id IS NULL"
+                "UPDATE goals SET user_id = ? WHERE user_id IS NULL",
+                "UPDATE tasks SET user_id = ? WHERE user_id IS NULL",
+                "UPDATE challenges SET user_id = ? WHERE user_id IS NULL",
+                "UPDATE check_ins SET user_id = ? WHERE user_id IS NULL"
             ]
             for sql in updateSQLs {
-                executeSQL(sql)
+                var stmt: OpaquePointer?
+                if sqlite3_prepare_v2(db, sql, -1, &stmt, nil) == SQLITE_OK {
+                    sqlite3_bind_text(stmt, 1, (userId as NSString).utf8String, -1, nil)
+                    sqlite3_step(stmt)
+                }
+                sqlite3_finalize(stmt)
             }
         }
 
         print("[DatabaseManager] Migrated to v2: added user_id columns")
+    }
+
+    // MARK: - Generic Onboarding Data Storage
+
+    func saveOnboardingData(userId: String, key: String, data: Data) -> Bool {
+        let sql = "INSERT OR REPLACE INTO onboarding_data (user_id, key, data, updated_at) VALUES (?, ?, ?, ?)"
+        var stmt: OpaquePointer?
+        guard sqlite3_prepare_v2(db, sql, -1, &stmt, nil) == SQLITE_OK else { return false }
+        defer { sqlite3_finalize(stmt) }
+        sqlite3_bind_text(stmt, 1, (userId as NSString).utf8String, -1, nil)
+        sqlite3_bind_text(stmt, 2, (key as NSString).utf8String, -1, nil)
+        sqlite3_bind_blob(stmt, 3, (data as NSData).bytes, Int32(data.count), nil)
+        sqlite3_bind_double(stmt, 4, Date().timeIntervalSince1970)
+        return sqlite3_step(stmt) == SQLITE_DONE
+    }
+
+    func loadOnboardingData(userId: String, key: String) -> Data? {
+        let sql = "SELECT data FROM onboarding_data WHERE user_id = ? AND key = ?"
+        var stmt: OpaquePointer?
+        guard sqlite3_prepare_v2(db, sql, -1, &stmt, nil) == SQLITE_OK else { return nil }
+        defer { sqlite3_finalize(stmt) }
+        sqlite3_bind_text(stmt, 1, (userId as NSString).utf8String, -1, nil)
+        sqlite3_bind_text(stmt, 2, (key as NSString).utf8String, -1, nil)
+
+        guard sqlite3_step(stmt) == SQLITE_ROW else { return nil }
+        let size = sqlite3_column_bytes(stmt, 0)
+        guard let blob = sqlite3_column_blob(stmt, 0) else { return nil }
+        return Data(bytes: blob, count: Int(size))
     }
 
     // MARK: - Conversation CRUD
