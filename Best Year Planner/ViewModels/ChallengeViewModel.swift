@@ -10,7 +10,7 @@ final class ChallengeViewModel: ObservableObject {
     @Published var isCompleting: Bool = false
     @Published var showingUnlock: Bool = false
     @Published var showingSubscription: Bool = false
-    @Published var showingCompletionCelebration: Bool = false
+    @Published var showingCompletionCelebration: Bool = false\n    @Published var showingBeliefAudit: Bool = false
 
     private let db = DatabaseManager.shared
     

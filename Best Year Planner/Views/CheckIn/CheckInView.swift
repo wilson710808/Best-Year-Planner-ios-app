@@ -115,6 +115,9 @@ struct CheckInView: View {
             .sheet(isPresented: $challengeViewModel.showingUnlock) {
                 ChallengeUnlockView(viewModel: challengeViewModel)
             }
+            .sheet(isPresented: \$challengeViewModel.showingBeliefAudit) {
+                BeliefAuditSheetView()
+            }
             .onAppear {
                 viewModel.loadTodaysData()
                 challengeViewModel.loadChallenges()

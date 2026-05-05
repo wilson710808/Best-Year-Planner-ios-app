@@ -148,7 +148,7 @@ final class AIService: AIProvider, Sendable {
     public func getCoachResponse(userId: String, query: String, conversationHistory: [AIMessage]) async -> String {
         let systemMessage: [String: String] = [
             "role": "system",
-            "content": "你是一位專業的AI教練，根據《規劃最好的一年》原則，幫助用戶設定目標、追蹤進度、克服拖延。請以教練的身份回答問題，語氣溫暖但直接，給出具體可行建議。"
+            "content": BeliefTransformationPrompts.coachSystemPrompt
         ]
         // 將對話歷史轉換為 messages 陣列
         var messagesArray: [[String: String]] = [systemMessage]
@@ -167,9 +167,22 @@ final class AIService: AIProvider, Sendable {
 
     /// AIProvider: 夥伴回覆（帶對話歷史上下文）
     public func getPartnerResponse(userId: String, query: String, partnerName: String, conversationHistory: [AIMessage]) async -> String {
+        // 根據夥伴名稱推斷角色，使用對應的信念轉化 prompt
+        let beliefPrompt: String
+        if partnerName.contains("小藍") || partnerName.contains("阿星") {
+            beliefPrompt = BeliefTransformationPrompts.fellowStarterPrompt
+        } else if partnerName.contains("明姐") || partnerName.contains("過來人") {
+            beliefPrompt = BeliefTransformationPrompts.experiencedGuidePrompt
+        } else if partnerName.contains("小綠") || partnerName.contains("新手") {
+            beliefPrompt = BeliefTransformationPrompts.inspiredBeginnerPrompt
+        } else if partnerName.contains("陳老師") || partnerName.contains("教練") {
+            beliefPrompt = BeliefTransformationPrompts.coachPartnerPrompt
+        } else {
+            beliefPrompt = BeliefTransformationPrompts.fellowStarterPrompt
+        }
         let systemMessage: [String: String] = [
             "role": "system",
-            "content": "你是用戶的AI夥伴\(partnerName)，以夥伴的身份陪伴用戶成長，分享經驗來支持用戶。語氣友善、真誠，像朋友一樣交流。"
+            "content": beliefPrompt
         ]
         var messagesArray: [[String: String]] = [systemMessage]
         for msg in conversationHistory.suffix(10) {
@@ -769,7 +782,13 @@ final class AIService: AIProvider, Sendable {
         }
 
         let completedCount = previousDays.filter { $0.isCompleted }.count
-        let prompt = "用戶正在進行\(dayNumber <= 7 ? "7天啟動" : "21天挑戰")第\(dayNumber)天，已連續完成\(completedCount)天。請給一句簡短鼓勵（20字以內），幫助用戶堅持下去。"
+        let challengeType = dayNumber <= 7 ? "7天啟動" : "21天挑戰"
+        let prompt = BeliefTransformationPrompts.dailyTipPrompt(
+            dayNumber: dayNumber,
+            completedCount: completedCount,
+            totalDays: dayNumber <= 7 ? 7 : 21,
+            challengeType: challengeType
+        )
         let tip = await queryAIGateway(userId: userId, query: prompt)
 
         tipCache[cacheKey] = (tip: tip, timestamp: Date())

@@ -150,9 +150,17 @@ final class GrowthGroupService {
             return "找不到這位夥伴。"
         }
 
+        // 使用角色對應的信念轉化 prompt
+        let rolePrompt: String
+        switch partner.role {
+        case .fellowStarter: rolePrompt = BeliefTransformationPrompts.fellowStarterPrompt
+        case .experiencedGuide: rolePrompt = BeliefTransformationPrompts.experiencedGuidePrompt
+        case .inspiredBeginner: rolePrompt = BeliefTransformationPrompts.inspiredBeginnerPrompt
+        case .coach: rolePrompt = BeliefTransformationPrompts.coachPartnerPrompt
+        }
+
         let contextPrompt = """
-        你是\(partner.name)，角色是「\(partner.role.displayName)」。
-        \(partner.role.personalityPrompt)
+        \(rolePrompt)
 
         你的背景：\(partner.backstory)
         你的性格：\(partner.personality)
@@ -162,6 +170,7 @@ final class GrowthGroupService {
         主題：\(group.theme)
 
         請以\(partner.name)的身份回覆用戶的訊息，保持角色一致性。
+        在對話中融入信念轉化：當用戶表達自我設限時，溫和地引導開放性視角。
         """
 
         // 構建帶角色 context 的查詢
@@ -272,18 +281,48 @@ final class GrowthGroupService {
         activityType: GroupActivityType
     ) async -> String {
         let userId = UserDefaultsManager.shared.currentUserId ?? ""
+
+        // 使用信念轉化增強的打卡回覆 prompt
+        if activityType == .checkIn {
+            let beliefPrompt = BeliefTransformationPrompts.checkInBeliefPrompt(
+                partnerRole: partner.role,
+                checkInContent: userMessage,
+                dayNumber: group.dayNumber,
+                totalDays: group.totalDays
+            )
+            let fullPrompt = """
+            你是\(partner.name)（\(partner.role.displayName)），在揪團「\(group.name)」中。
+            背景：\(partner.backstory)
+            性格：\(partner.personality)
+            狀態：\(partner.currentStatus)
+
+            \(beliefPrompt)
+            """
+            return await aiProvider.query(userId: userId, query: fullPrompt)
+        }
+
+        // 非打卡場景使用角色對應的信念轉化 prompt
+        let rolePrompt: String
+        switch partner.role {
+        case .fellowStarter: rolePrompt = BeliefTransformationPrompts.fellowStarterPrompt
+        case .experiencedGuide: rolePrompt = BeliefTransformationPrompts.experiencedGuidePrompt
+        case .inspiredBeginner: rolePrompt = BeliefTransformationPrompts.inspiredBeginnerPrompt
+        case .coach: rolePrompt = BeliefTransformationPrompts.coachPartnerPrompt
+        }
+
         let prompt = """
-        你是\(partner.name)（\(partner.role.displayName)），在揪團「\(group.name)」中。
-        \(partner.role.personalityPrompt)
+        \(rolePrompt)
+
         背景：\(partner.backstory)
         性格：\(partner.personality)
         狀態：\(partner.currentStatus)
         揪團進度：第\(group.dayNumber)天/共\(group.totalDays)天
 
-        用戶\(activityType == .checkIn ? "打卡了" : activityType == .sharing ? "分享了" : "發了訊息")：
+        用戶\(activityType == .sharing ? "分享了" : activityType == .question ? "提問了" : "發了訊息")：
         「\(userMessage)」
 
         請以\(partner.name)的身份簡短回覆（30-80字），保持角色語氣和個性。
+        在回覆中融入信念轉化引導：如果用戶暗示了限制性信念，溫和地引導開放性視角。
         不要重複用戶說過的話，要有自己的觀點和感受。
         """
 
