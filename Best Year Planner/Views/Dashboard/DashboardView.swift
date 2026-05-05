@@ -3,6 +3,7 @@ import SwiftUI
 struct DashboardView: View {
     @StateObject private var viewModel = DashboardViewModel()
     @StateObject private var challengeViewModel = ChallengeViewModel()
+    @State private var showBuddyGroup = false
     @EnvironmentObject private var appState: AppState
 
     var body: some View {
@@ -179,6 +180,9 @@ struct DashboardView: View {
                             QuickActionCard(icon: "crown.fill", title: "升級", color: Color(hex: "FFD700")) {
                                 challengeViewModel.showingSubscription = true
                             }
+                            QuickActionCard(icon: "person.3.fill", title: "揪團成長", color: AppColors.secondary) {
+                                showBuddyGroup = true
+                            }
                         }
                         .padding(.horizontal)
                     }
@@ -213,6 +217,10 @@ struct DashboardView: View {
             }
             .sheet(isPresented: $challengeViewModel.showingUnlock) {
                 ChallengeUnlockView(viewModel: challengeViewModel)
+            }
+            .sheet(isPresented: $showBuddyGroup) {
+                BuddyGroupView()
+                    .environmentObject(ChallengeViewModel.shared)
             }
             .sheet(isPresented: $challengeViewModel.showingSubscription) {
                 SubscriptionView()

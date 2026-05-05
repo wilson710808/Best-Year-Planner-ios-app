@@ -166,6 +166,20 @@ final class UserDefaultsManager {
         defaults.synchronize()
         KeychainManager.shared.clearAll()
     }
+    
+    // MARK: - Generic Data Methods
+    
+    func data(forKey key: String) -> Data? {
+        return defaults.data(forKey: key)
+    }
+    
+    func setData(_ data: Data, forKey key: String) {
+        defaults.set(data, forKey: key)
+    }
+    
+    func remove(forKey key: String) {
+        defaults.removeObject(forKey: key)
+    }
 
     // MARK: - Widget Sync
 
