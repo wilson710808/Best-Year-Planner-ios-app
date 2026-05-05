@@ -65,7 +65,7 @@ struct WeeklySummaryView: View {
                 .progressViewStyle(LinearProgressViewStyle(tint: AppColors.primary))
         }
         .padding()
-        .background(Color.white)
+        .background(AppColors.cardBackground)
         .cornerRadius(12)
         .shadow(color: Color.black.opacity(0.05), radius: 4, x: 0, y: 2)
     }

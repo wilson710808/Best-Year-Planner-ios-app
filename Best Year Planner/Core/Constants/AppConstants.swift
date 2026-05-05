@@ -24,6 +24,7 @@ enum AppConstants {
         static let userId = "userId"
     }
 
+    // MARK: - 預留 API Endpoints（未使用，當前使用 AI.gatewayBaseURL）
     enum APIEndpoints {
         static let baseURL = "https://api.bestyearplanner.com"
         static let auth = "/api/auth"

@@ -10,6 +10,7 @@ final class ChallengeViewModel: ObservableObject {
     @Published var isCompleting: Bool = false
     @Published var showingUnlock: Bool = false
     @Published var showingSubscription: Bool = false
+    @Published var showingCompletionCelebration: Bool = false
 
     private let db = DatabaseManager.shared
     
@@ -74,10 +75,11 @@ final class ChallengeViewModel: ObservableObject {
                 challenge.phase = .completed
                 ChallengeNotificationManager.shared.scheduleUnlockReminder()
             } else if challenge.phase == .twentyOneDayChallenge {
-                // 21天完成
+                // 21天完成 — 慶祝 + 引導回年度目標
                 challenge.phase = .completed
                 AppState.shared.decrementActiveChallengeCount()
                 ChallengeNotificationManager.shared.clearBadge()
+                showingCompletionCelebration = true
             }
         } else {
             // Schedule streak warning for the evening

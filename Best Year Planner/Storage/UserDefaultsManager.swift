@@ -125,6 +125,18 @@ final class UserDefaultsManager {
         }
     }
 
+    /// Session token for auto-login（替代明文密碼）
+    var savedSessionToken: String? {
+        get { KeychainManager.shared.readString(forKey: AppConstants.KeychainKeys.userId + "_session") }
+        set {
+            if let value = newValue {
+                _ = KeychainManager.shared.save(value, forKey: AppConstants.KeychainKeys.userId + "_session")
+            } else {
+                _ = KeychainManager.shared.delete(forKey: AppConstants.KeychainKeys.userId + "_session")
+            }
+        }
+    }
+
     func clearAll() {
         let domain = Bundle.main.bundleIdentifier!
         defaults.removePersistentDomain(forName: domain)
@@ -149,6 +161,7 @@ final class UserDefaultsManager {
             "totalDays": totalDays,
             "dimension": dimension.rawValue,
             "aiTip": task.aiTip ?? "",
+            "isCompleted": task.isCompleted,
             "updatedAt": ISO8601DateFormatter().string(from: Date())
         ]
         

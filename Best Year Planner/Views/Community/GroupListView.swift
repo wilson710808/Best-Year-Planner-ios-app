@@ -44,7 +44,7 @@ struct GroupListView: View {
                 }
             }
             .padding()
-            .background(Color.white)
+            .background(AppColors.cardBackground)
 
             // 主題篩選
             if !availableThemes.isEmpty {
@@ -63,7 +63,7 @@ struct GroupListView: View {
                     .padding(.horizontal)
                     .padding(.vertical, 8)
                 }
-                .background(Color.white)
+                .background(AppColors.cardBackground)
             }
 
             // 揪團列表

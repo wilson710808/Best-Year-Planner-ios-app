@@ -122,6 +122,9 @@ struct DashboardView: View {
             .sheet(isPresented: $challengeViewModel.showingSubscription) {
                 SubscriptionView()
             }
+            .sheet(isPresented: $challengeViewModel.showingCompletionCelebration) {
+                ChallengeCompletionCelebrationView(challengeViewModel: challengeViewModel)
+            }
         }
     }
 }
@@ -235,7 +238,7 @@ struct ChallengeCardView: View {
             }
         }
         .padding()
-        .background(Color.white)
+        .background(AppColors.cardBackground)
         .cornerRadius(16)
         .shadow(color: Color.black.opacity(0.06), radius: 8, x: 0, y: 4)
     }
@@ -266,7 +269,7 @@ struct NoChallengeCardView: View {
         }
         .padding()
         .frame(maxWidth: .infinity)
-        .background(Color.white)
+        .background(AppColors.cardBackground)
         .cornerRadius(16)
         .shadow(color: Color.black.opacity(0.04), radius: 4, x: 0, y: 2)
     }
@@ -296,7 +299,7 @@ struct StatCardView: View {
         }
         .frame(maxWidth: .infinity)
         .padding()
-        .background(Color.white)
+        .background(AppColors.cardBackground)
         .cornerRadius(12)
     }
 }
@@ -326,7 +329,7 @@ struct MiniDimensionProgress: View {
         }
         .padding()
         .frame(maxWidth: .infinity)
-        .background(Color.white)
+        .background(AppColors.cardBackground)
         .cornerRadius(12)
     }
 }
@@ -351,8 +354,91 @@ struct QuickActionCard: View {
             }
             .frame(maxWidth: .infinity)
             .padding()
-            .background(Color.white)
+            .background(AppColors.cardBackground)
             .cornerRadius(12)
         }
+    }
+}
+
+
+// MARK: - Challenge Completion Celebration
+struct ChallengeCompletionCelebrationView: View {
+    @ObservedObject var challengeViewModel: ChallengeViewModel
+    @Environment(\.dismiss) private var dismiss
+    @StateObject private var goalViewModel = GoalViewModel()
+
+    var body: some View {
+        VStack(spacing: 24) {
+            Spacer()
+
+            Image(systemName: "trophy.fill")
+                .font(.system(size: 72))
+                .foregroundColor(Color(hex: "FFD700"))
+
+            Text("🎉 恭喜完成挑戰！")
+                .font(.title)
+                .fontWeight(.bold)
+                .foregroundColor(AppColors.textPrimary)
+
+            Text("你已經成功完成21天習慣養成挑戰！
+這個習慣已經成為你的一部分。")
+                .font(.body)
+                .foregroundColor(AppColors.textSecondary)
+                .multilineTextAlignment(.center)
+                .padding(.horizontal, 32)
+
+            // 建議下一步
+            VStack(alignment: .leading, spacing: 12) {
+                Text("接下來你可以...")
+                    .font(.headline)
+                    .foregroundColor(AppColors.textPrimary)
+
+                HStack(spacing: 12) {
+                    Image(systemName: "target")
+                        .foregroundColor(AppColors.primary)
+                        .frame(width: 24)
+                    Text("設定新的年度目標")
+                        .font(.subheadline)
+                        .foregroundColor(AppColors.textSecondary)
+                }
+
+                HStack(spacing: 12) {
+                    Image(systemName: "flame.fill")
+                        .foregroundColor(AppColors.accent)
+                        .frame(width: 24)
+                    Text("開始新的21天挑戰")
+                        .font(.subheadline)
+                        .foregroundColor(AppColors.textSecondary)
+                }
+
+                HStack(spacing: 12) {
+                    Image(systemName: "chart.line.uptrend.xyaxis")
+                        .foregroundColor(AppColors.success)
+                        .frame(width: 24)
+                    Text("查看你的年度進度")
+                        .font(.subheadline)
+                        .foregroundColor(AppColors.textSecondary)
+                }
+            }
+            .padding()
+            .frame(maxWidth: .infinity, alignment: .leading)
+            .background(AppColors.cardBackground)
+            .cornerRadius(12)
+            .padding(.horizontal)
+
+            Button(action: { dismiss() }) {
+                Text("繼續前進")
+                    .font(.headline)
+                    .foregroundColor(.white)
+                    .frame(maxWidth: .infinity)
+                    .padding(.vertical, 14)
+                    .background(AppColors.primary)
+                    .cornerRadius(12)
+            }
+            .padding(.horizontal, 32)
+
+            Spacer()
+        }
+        .background(AppColors.background.ignoresSafeArea())
     }
 }

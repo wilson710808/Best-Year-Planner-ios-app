@@ -88,7 +88,7 @@ public final class MockAIService: AIProvider, Sendable {
         return "嗨！我是\(partnerName)，你親密的夥伴！我理解你的處境，我也曾經歷過類似的挑戰。重要的是我們不放棄，一起加油！你今天做了什麼讓自己驕傲的事情嗎？"
     }
     
-    public func generateWeeklyReviewSummary(checkIns: [CheckIn], tasks: [Task]) -> String {
+    public func generateWeeklyReviewSummary(checkIns: [CheckIn], tasks: [Task]) async -> String {
         let completedTasks = tasks.filter { $0.status == .completed }.count
         let totalTasks = tasks.count
         let completionRate = totalTasks > 0 ? Double(completedTasks) / Double(totalTasks) : 0
@@ -112,7 +112,7 @@ public final class MockAIService: AIProvider, Sendable {
         return summary
     }
     
-    public func generateAISuggestion(forType type: ReviewType, data: [String: Any]) -> String {
+    public func generateAISuggestion(forType type: ReviewType, data: [String: Any]) async -> String {
         switch type {
         case .weekly:
             return "這週的表現很不錯！建議你繼續保持每日的微習慣，不要給自己太大壓力。"

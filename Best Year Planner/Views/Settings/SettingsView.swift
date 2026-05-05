@@ -2,6 +2,8 @@ import SwiftUI
 
 struct SettingsView: View {
     @StateObject private var viewModel = SettingsViewModel()
+    @State private var showShareSheet = false
+    @State private var exportFileURL: URL?
     @EnvironmentObject private var localizationManager: LocalizationManager
     @EnvironmentObject private var appState: AppState
 
@@ -294,4 +296,15 @@ struct FeatureRow: View {
             }
         }
     }
+}
+
+// MARK: - Share Sheet Wrapper
+struct ShareSheetView: UIViewControllerRepresentable {
+    let activityItems: [Any]
+
+    func makeUIViewController(context: Context) -> UIActivityViewController {
+        UIActivityViewController(activityItems: activityItems, applicationActivities: nil)
+    }
+
+    func updateUIViewController(_ uiViewController: UIActivityViewController, context: Context) {}
 }

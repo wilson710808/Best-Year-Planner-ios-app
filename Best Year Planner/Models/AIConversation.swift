@@ -7,6 +7,7 @@ enum ConversationType: String, Codable {
 
 struct AIConversation: Codable, Identifiable, Equatable {
     var id: String
+    var userId: String
     var type: ConversationType
     var messages: [AIMessage]
     var createdAt: Date
@@ -14,12 +15,14 @@ struct AIConversation: Codable, Identifiable, Equatable {
 
     init(
         id: String = UUID().uuidString,
+        userId: String = "",
         type: ConversationType = .coach,
         messages: [AIMessage] = [],
         createdAt: Date = Date(),
         updatedAt: Date = Date()
     ) {
         self.id = id
+        self.userId = userId
         self.type = type
         self.messages = messages
         self.createdAt = createdAt

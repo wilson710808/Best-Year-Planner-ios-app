@@ -69,6 +69,11 @@ final class AppState: ObservableObject {
         userDefaults.subscriptionState = state
     }
 
+    func downgradeFromPremium() {
+        isPremiumUser = false
+        AppLogger.log("已降級為免費用戶", category: AppLogger.subscription, level: .warning)
+    }
+
     func upgradeToPremium() {
         subscriptionState.tier = .premium
         userDefaults.subscriptionState = subscriptionState

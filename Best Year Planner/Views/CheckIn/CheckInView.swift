@@ -58,7 +58,7 @@ struct CheckInView: View {
                                 )
                             }
                             .padding()
-                            .background(Color.white)
+                            .background(AppColors.cardBackground)
                             .cornerRadius(12)
                             .shadow(color: Color.black.opacity(0.04), radius: 4, x: 0, y: 2)
                             .padding(.horizontal)
@@ -242,7 +242,7 @@ struct CheckInTaskRow: View {
             }
         }
         .padding()
-        .background(Color.white)
+        .background(AppColors.cardBackground)
         .cornerRadius(12)
     }
 }
@@ -303,7 +303,7 @@ struct CheckInSheetView: View {
                     TextField("寫下你的感受...", text: $viewModel.checkInNote, axis: .vertical)
                         .lineLimit(3...5)
                         .padding()
-                        .background(Color.white)
+                        .background(AppColors.cardBackground)
                         .cornerRadius(12)
                         .overlay(
                             RoundedRectangle(cornerRadius: 12)

@@ -16,37 +16,34 @@ final class ReviewViewModel: ObservableObject {
 
     func loadReviews() {
         isLoading = true
-
         weeklyReviews = reviewService.getWeeklyReviews()
         monthlyReviews = reviewService.getMonthlyReviews()
         yearlyReviews = reviewService.getYearlyReviews()
-
         currentWeeklyReview = reviewService.getLatestReview(byType: .weekly)
         currentMonthlyReview = reviewService.getLatestReview(byType: .monthly)
         currentYearlyReview = reviewService.getLatestReview(byType: .yearly)
-
         isLoading = false
     }
 
-    func createWeeklyReview() {
+    func createWeeklyReview() async {
         isLoading = true
-        let review = reviewService.createWeeklyReview()
+        let review = await reviewService.createWeeklyReview()
         currentWeeklyReview = review
         weeklyReviews.insert(review, at: 0)
         isLoading = false
     }
 
-    func createMonthlyReview() {
+    func createMonthlyReview() async {
         isLoading = true
-        let review = reviewService.createMonthlyReview()
+        let review = await reviewService.createMonthlyReview()
         currentMonthlyReview = review
         monthlyReviews.insert(review, at: 0)
         isLoading = false
     }
 
-    func createYearlyReview() {
+    func createYearlyReview() async {
         isLoading = true
-        let review = reviewService.createYearlyReview()
+        let review = await reviewService.createYearlyReview()
         currentYearlyReview = review
         yearlyReviews.insert(review, at: 0)
         isLoading = false
@@ -55,22 +52,18 @@ final class ReviewViewModel: ObservableObject {
     func shouldShowWeeklyReview() -> Bool {
         let lastReview = reviewService.getLatestReview(byType: .weekly)
         guard let lastDate = lastReview?.createdAt else { return true }
-
         let calendar = Calendar.current
         let weekOfYear = calendar.component(.weekOfYear, from: Date())
         let lastWeekOfYear = calendar.component(.weekOfYear, from: lastDate)
-
         return weekOfYear != lastWeekOfYear
     }
 
     func shouldShowMonthlyReview() -> Bool {
         let lastReview = reviewService.getLatestReview(byType: .monthly)
         guard let lastDate = lastReview?.createdAt else { return true }
-
         let calendar = Calendar.current
         let month = calendar.component(.month, from: Date())
         let lastMonth = calendar.component(.month, from: lastDate)
-
         return month != lastMonth
     }
 }

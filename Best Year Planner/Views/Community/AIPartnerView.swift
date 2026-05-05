@@ -29,7 +29,7 @@ struct AIPartnerView: View {
                 HStack(spacing: 12) {
                     TextField("和夥伴聊聊...", text: $viewModel.inputText)
                         .padding()
-                        .background(Color.white)
+                        .background(AppColors.cardBackground)
                         .cornerRadius(20)
                         .overlay(
                             RoundedRectangle(cornerRadius: 20)
@@ -50,7 +50,7 @@ struct AIPartnerView: View {
                     .disabled(viewModel.inputText.isEmpty || viewModel.isLoading)
                 }
                 .padding()
-                .background(Color.white)
+                .background(AppColors.cardBackground)
             }
             .background(AppColors.background.ignoresSafeArea())
             .navigationTitle("AI夥伴 \(viewModel.partnerName)")

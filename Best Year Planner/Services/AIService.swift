@@ -144,18 +144,84 @@ final class AIService: AIProvider, Sendable {
         return await queryAIGateway(userId: userId, query: welcomeQuery)
     }
 
-    /// AIProvider: 教練回覆
+    /// AIProvider: 教練回覆（帶對話歷史上下文）
     public func getCoachResponse(userId: String, query: String, conversationHistory: [AIMessage]) async -> String {
-        // 添加角色提示
-        let coachPrompt = "你是一位專業的AI教練，根據《規劃最好的一年》原則，幫助用戶設定目標、追蹤進度、克服拖延。請以教練的身份回答以下問題：\(query)"
-        return await queryAIGateway(userId: userId, query: coachPrompt)
+        let systemMessage: [String: String] = [
+            "role": "system",
+            "content": "你是一位專業的AI教練，根據《規劃最好的一年》原則，幫助用戶設定目標、追蹤進度、克服拖延。請以教練的身份回答問題，語氣溫暖但直接，給出具體可行建議。"
+        ]
+        // 將對話歷史轉換為 messages 陣列
+        var messagesArray: [[String: String]] = [systemMessage]
+        for msg in conversationHistory.suffix(10) {  // 最近10條消息作為上下文
+            messagesArray.append([
+                "role": msg.isFromUser ? "user" : "assistant",
+                "content": msg.content
+            ])
+        }
+        // 確保最新用戶消息在陣列中
+        if let last = messagesArray.last, last["role"] != "user" {
+            messagesArray.append(["role": "user", "content": query])
+        }
+        return await queryAIGatewayWithMessages(userId: userId, messages: messagesArray)
     }
 
-    /// AIProvider: 夥伴回覆
+    /// AIProvider: 夥伴回覆（帶對話歷史上下文）
     public func getPartnerResponse(userId: String, query: String, partnerName: String, conversationHistory: [AIMessage]) async -> String {
-        // 添加角色提示
-        let partnerPrompt = "你是用戶的AI夥伴\(partnerName)，以夥伴的身份陪伴用戶成長，分享經驗來支持用戶。請回答：\(query)"
-        return await queryAIGateway(userId: userId, query: partnerPrompt)
+        let systemMessage: [String: String] = [
+            "role": "system",
+            "content": "你是用戶的AI夥伴\(partnerName)，以夥伴的身份陪伴用戶成長，分享經驗來支持用戶。語氣友善、真誠，像朋友一樣交流。"
+        ]
+        var messagesArray: [[String: String]] = [systemMessage]
+        for msg in conversationHistory.suffix(10) {
+            messagesArray.append([
+                "role": msg.isFromUser ? "user" : "assistant",
+                "content": msg.content
+            ])
+        }
+        if let last = messagesArray.last, last["role"] != "user" {
+            messagesArray.append(["role": "user", "content": query])
+        }
+        return await queryAIGatewayWithMessages(userId: userId, messages: messagesArray)
+    }
+
+    /// 使用 messages 陣列調用 AI Gateway（支持多輪上下文）
+    private func queryAIGatewayWithMessages(userId: String, messages: [[String: String]]) async -> String {
+        let urlString = "\(aiGatewayBaseURL)/ws/05-ai-gateway/api/query"
+        guard let url = URL(string: urlString) else {
+            return "抱歉，服務位址配置錯誤。"
+        }
+        let requestBody: [String: Any] = [
+            "app_id": appId,
+            "user_id": userId,
+            "messages": messages
+        ]
+        guard let jsonData = try? JSONSerialization.data(withJSONObject: requestBody) else {
+            return "抱歉，請求處理失敗。"
+        }
+        var request = URLRequest(url: url)
+        request.httpMethod = "POST"
+        request.setValue("application/json", forHTTPHeaderField: "Content-Type")
+        request.httpBody = jsonData
+        request.timeoutInterval = 60
+        do {
+            let (data, response) = try await urlSession.data(for: request)
+            guard let httpResponse = response as? HTTPURLResponse else {
+                return "抱歉，服務響應異常。"
+            }
+            guard httpResponse.statusCode == 200 else {
+                return "抱歉，服務暫時不可用（錯誤碼: \(httpResponse.statusCode)）。"
+            }
+            if let json = try? JSONSerialization.jsonObject(with: data) as? [String: Any] {
+                if let aiResponse = json["response"] as? String {
+                    return aiResponse
+                } else if let errorMsg = json["error"] as? String {
+                    return "抱歉，服務返回錯誤：\(errorMsg)"
+                }
+            }
+            return "抱歉，無法解析服務響應。"
+        } catch {
+            return "抱歉，網路連線失敗：\(error.localizedDescription)"
+        }
     }
 
     // MARK: - 原有功能保留
@@ -517,7 +583,7 @@ final class AIService: AIProvider, Sendable {
 
     // MARK: - AIProvider Protocol Methods
     
-    public func generateWeeklyReviewSummary(checkIns: [CheckIns], tasks: [Task]) -> String {
+    public func generateWeeklyReviewSummary(checkIns: [CheckIn], tasks: [Task]) async -> String {
         let completedTasks = tasks.filter { $0.status == .completed }.count
         let totalTasks = tasks.count
         let completionRate = totalTasks > 0 ? Double(completedTasks) / Double(totalTasks) * 100 : 0
@@ -539,14 +605,29 @@ final class AIService: AIProvider, Sendable {
         return summary
     }
 
-    public func generateAISuggestion(forType type: ReviewType, data: [String: Any]) -> String {
+    public func generateAISuggestion(forType type: ReviewType, data: [String: Any]) async -> String {
+        // 嘗試使用 AI Gateway 生成個性化建議
+        let userId = UserDefaultsManager.shared.currentUserId ?? "anonymous"
+        let typeDesc: String
         switch type {
-        case .weekly:
-            return generateWeeklySuggestions(data: data)
-        case .monthly:
-            return generateMonthlySuggestions(data: data)
-        case .yearly:
-            return generateYearlySuggestions(data: data)
+        case .weekly: typeDesc = "每週"
+        case .monthly: typeDesc = "每月"
+        case .yearly: typeDesc = "年度"
+        }
+        let prompt = "作為AI教練，根據用戶的\(typeDesc)複盤數據（\(data)），給出3條具體可行的改進建議，每條不超過30字。""
+        let aiResponse = await queryAIGateway(userId: userId, query: prompt)
+        // 如果 AI 回覆有效，使用 AI 建議；否則 fallback 到規則引擎
+        if !aiResponse.hasPrefix("抱歉") && aiResponse.count > 10 {
+            return aiResponse
+        }
+        return generateLocalSuggestions(forType: type, data: data)
+    }
+
+    private func generateLocalSuggestions(forType type: ReviewType, data: [String: Any]) -> String {
+        switch type {
+        case .weekly: return generateWeeklySuggestions(data: data)
+        case .monthly: return generateMonthlySuggestions(data: data)
+        case .yearly: return generateYearlySuggestions(data: data)
         }
     }
 

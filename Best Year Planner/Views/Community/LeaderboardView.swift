@@ -83,7 +83,7 @@ struct LeaderboardView: View {
                                     .foregroundColor(AppColors.textSecondary)
                             }
                             .padding()
-                            .background(Color.white)
+                            .background(AppColors.cardBackground)
                             .cornerRadius(12)
                             .padding(.horizontal)
                         }

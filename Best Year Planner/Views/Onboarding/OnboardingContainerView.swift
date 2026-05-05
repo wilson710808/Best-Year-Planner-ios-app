@@ -161,7 +161,7 @@ struct SingleQuestionStepView: View {
                 TextField(question.placeholder, text: $answer)
                     .font(.body)
                     .padding()
-                    .background(Color.white)
+                    .background(AppColors.cardBackground)
                     .cornerRadius(12)
                     .overlay(
                         RoundedRectangle(cornerRadius: 12)
@@ -210,7 +210,7 @@ struct TwoQuestionsStepView: View {
                     TextField(question2.placeholder, text: $answer2)
                         .font(.body)
                         .padding()
-                        .background(Color.white)
+                        .background(AppColors.cardBackground)
                         .cornerRadius(12)
                         .overlay(
                             RoundedRectangle(cornerRadius: 12)
@@ -232,7 +232,7 @@ struct TwoQuestionsStepView: View {
                     TextField(question3.placeholder, text: $answer3)
                         .font(.body)
                         .padding()
-                        .background(Color.white)
+                        .background(AppColors.cardBackground)
                         .cornerRadius(12)
                         .overlay(
                             RoundedRectangle(cornerRadius: 12)
@@ -362,7 +362,7 @@ struct DailyTaskPreviewCard: View {
             Spacer()
         }
         .padding()
-        .background(Color.white)
+        .background(AppColors.cardBackground)
         .cornerRadius(12)
         .shadow(color: Color.black.opacity(0.03), radius: 4, x: 0, y: 2)
     }

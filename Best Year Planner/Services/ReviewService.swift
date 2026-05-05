@@ -15,7 +15,7 @@ final class ReviewService: Sendable {
 
     private init() {}
 
-    func createWeeklyReview() -> Review {
+    func createWeeklyReview() async -> Review {
         let now = Date()
         let period = now.weekYearString
 
@@ -49,7 +49,7 @@ final class ReviewService: Sendable {
         }
 
         let data: [String: Any] = ["completionRate": weeklySummary.completionRate]
-        let aiSuggestions = aiProvider.generateAISuggestion(forType: .weekly, data: data)
+        let aiSuggestions = await aiProvider.generateAISuggestion(forType: .weekly, data: data)
 
         let review = Review(
             type: .weekly,
@@ -65,7 +65,7 @@ final class ReviewService: Sendable {
         return review
     }
 
-    func createMonthlyReview() -> Review {
+    func createMonthlyReview() async -> Review {
         let now = Date()
         let period = now.monthYearString
 
@@ -100,7 +100,7 @@ final class ReviewService: Sendable {
         }
 
         let data: [String: Any] = ["monthProgress": monthlyProgress]
-        let aiSuggestions = aiProvider.generateAISuggestion(forType: .monthly, data: data)
+        let aiSuggestions = await aiProvider.generateAISuggestion(forType: .monthly, data: data)
 
         let review = Review(
             type: .monthly,
@@ -116,7 +116,7 @@ final class ReviewService: Sendable {
         return review
     }
 
-    func createYearlyReview() -> Review {
+    func createYearlyReview() async -> Review {
         let year = Date().yearNumber
         let period = "\(year)"
 
@@ -159,7 +159,7 @@ final class ReviewService: Sendable {
         }
 
         let data: [String: Any] = [:]
-        aiSuggestions = aiProvider.generateAISuggestion(forType: .yearly, data: data)
+        let aiSuggestions = await aiProvider.generateAISuggestion(forType: .yearly, data: data)
 
         let review = Review(
             type: .yearly,

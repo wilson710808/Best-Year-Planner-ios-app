@@ -63,7 +63,7 @@ struct GoalDetailView: View {
                 }
                 .padding()
                 .frame(maxWidth: .infinity)
-                .background(Color.white)
+                .background(AppColors.cardBackground)
                 .cornerRadius(12)
                 .padding(.horizontal)
 
@@ -83,7 +83,7 @@ struct GoalDetailView: View {
                         .progressViewStyle(LinearProgressViewStyle(tint: Color(hex: goal.dimension.color)))
                 }
                 .padding()
-                .background(Color.white)
+                .background(AppColors.cardBackground)
                 .cornerRadius(12)
                 .padding(.horizontal)
 
@@ -106,7 +106,7 @@ struct GoalDetailView: View {
                     }
                     .padding()
                     .frame(maxWidth: .infinity, alignment: .leading)
-                    .background(Color.white)
+                    .background(AppColors.cardBackground)
                     .cornerRadius(12)
                     .padding(.horizontal)
                 }
@@ -125,7 +125,7 @@ struct GoalDetailView: View {
                             .foregroundColor(AppColors.textSecondary)
                     }
                     .padding()
-                    .background(Color.white)
+                    .background(AppColors.cardBackground)
                     .cornerRadius(12)
                     .padding(.horizontal)
                 }
@@ -145,7 +145,7 @@ struct GoalDetailView: View {
                     }
                     .padding()
                     .frame(maxWidth: .infinity, alignment: .leading)
-                    .background(Color.white)
+                    .background(AppColors.cardBackground)
                     .cornerRadius(12)
                     .padding(.horizontal)
                 }

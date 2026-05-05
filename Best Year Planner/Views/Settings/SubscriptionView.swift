@@ -45,7 +45,7 @@ struct SubscriptionView: View {
                             .foregroundColor(appState.subscriptionState.isPremium ? AppColors.accent : AppColors.textPrimary)
                     }
                     .padding()
-                    .background(Color.white)
+                    .background(AppColors.cardBackground)
                     .cornerRadius(12)
                     .padding(.horizontal)
 
@@ -75,7 +75,7 @@ struct SubscriptionView: View {
                         }
                     }
                     .padding()
-                    .background(Color.white)
+                    .background(AppColors.cardBackground)
                     .cornerRadius(12)
                     .padding(.horizontal)
 
@@ -122,7 +122,7 @@ struct SubscriptionView: View {
                             }
                         }
                         .padding()
-                        .background(Color.white)
+                        .background(AppColors.cardBackground)
                         .cornerRadius(12)
                         .padding(.horizontal)
                     }

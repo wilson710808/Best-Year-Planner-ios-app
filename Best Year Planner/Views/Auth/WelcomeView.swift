@@ -32,7 +32,7 @@ struct WelcomeView: View {
                                     .foregroundColor(AppColors.textSecondary)
                             }
                             .padding(8)
-                            .background(Color.white)
+                            .background(AppColors.cardBackground)
                             .cornerRadius(20)
                             .shadow(color: Color.black.opacity(0.05), radius: 2)
                         }

@@ -34,6 +34,8 @@ final class DatabaseManager {
         createCommunityTables()
         createChallengesTable()
         createDailyChallengeTasksTable()
+        createIndexes()
+        runMigrations()
     }
 
     private func createUsersTable() {
@@ -1005,4 +1007,319 @@ final class DatabaseManager {
             aiTip: aiTip
         )
     }
+
+    // MARK: - Indexes
+
+    /// 創建關鍵索引以優化查詢性能
+    private func createIndexes() {
+        let indexes = [
+            "CREATE INDEX IF NOT EXISTS idx_users_account ON users(account)",
+            "CREATE INDEX IF NOT EXISTS idx_goals_dimension ON goals(dimension)",
+            "CREATE INDEX IF NOT EXISTS idx_goals_status ON goals(status)",
+            "CREATE INDEX IF NOT EXISTS idx_goals_parent ON goals(parent_goal_id)",
+            "CREATE INDEX IF NOT EXISTS idx_tasks_goal_id ON tasks(goal_id)",
+            "CREATE INDEX IF NOT EXISTS idx_tasks_status ON tasks(status)",
+            "CREATE INDEX IF NOT EXISTS idx_tasks_deadline ON tasks(deadline)",
+            "CREATE INDEX IF NOT EXISTS idx_check_ins_task_id ON check_ins(task_id)",
+            "CREATE INDEX IF NOT EXISTS idx_check_ins_date ON check_ins(date)",
+            "CREATE INDEX IF NOT EXISTS idx_check_ins_task_date ON check_ins(task_id, date)",
+            "CREATE INDEX IF NOT EXISTS idx_conversations_type ON conversations(type)",
+            "CREATE INDEX IF NOT EXISTS idx_reviews_type ON reviews(type)",
+            "CREATE INDEX IF NOT EXISTS idx_reviews_type_period ON reviews(type, period)",
+            "CREATE INDEX IF NOT EXISTS idx_community_posts_group ON community_posts(group_id)",
+            "CREATE INDEX IF NOT EXISTS idx_community_posts_author ON community_posts(author_id)",
+            "CREATE INDEX IF NOT EXISTS idx_daily_challenge_tasks_challenge ON daily_challenge_tasks(challenge_id)",
+            "CREATE INDEX IF NOT EXISTS idx_daily_challenge_tasks_challenge_day ON daily_challenge_tasks(challenge_id, day_number)"
+        ]
+        for indexSQL in indexes {
+            executeSQL(indexSQL)
+        }
+    }
+
+    // MARK: - Database Migration
+
+    /// 使用 PRAGMA user_version 管理數據庫遷移
+    private func runMigrations() {
+        var currentVersion: Int32 = 0
+        var statement: OpaquePointer?
+        if sqlite3_prepare_v2(db, "PRAGMA user_version", -1, &statement, nil) == SQLITE_OK {
+            if sqlite3_step(statement) == SQLITE_ROW {
+                currentVersion = sqlite3_column_int(statement, 0)
+            }
+            sqlite3_finalize(statement)
+        }
+
+        let targetVersion: Int32 = 2
+
+        // Migration v1 → v2: 為 goals/tasks/challenges 添加 user_id 欄位
+        if currentVersion < 2 {
+            migrateToV2()
+            setDatabaseVersion(2)
+        }
+
+        // 未來遷移在此添加：
+        // if currentVersion < 3 { migrateToV3(); setDatabaseVersion(3) }
+    }
+
+    private func setDatabaseVersion(_ version: Int32) {
+        executeSQL("PRAGMA user_version = \(version)")
+    }
+
+    /// V2 遷移：為 goals / tasks / challenges 添加 user_id 欄位以支持多用戶數據隔離
+    private func migrateToV2() {
+        // 添加 user_id 欄位（SQLite ALTER TABLE 只支持 ADD COLUMN）
+        let migrations = [
+            "ALTER TABLE goals ADD COLUMN user_id TEXT",
+            "ALTER TABLE tasks ADD COLUMN user_id TEXT",
+            "ALTER TABLE challenges ADD COLUMN user_id TEXT",
+            "ALTER TABLE check_ins ADD COLUMN user_id TEXT"
+        ]
+        for sql in migrations {
+            // 如果欄位已存在，SQLite 會報錯，我們靜默忽略
+            var stmt: OpaquePointer?
+            if sqlite3_prepare_v2(db, sql, -1, &stmt, nil) == SQLITE_OK {
+                sqlite3_step(stmt)
+            }
+            sqlite3_finalize(stmt)
+        }
+
+        // 將現有數據綁定到當前用戶
+        if let userId = UserDefaultsManager.shared.currentUserId {
+            let updateSQLs = [
+                "UPDATE goals SET user_id = '\(userId)' WHERE user_id IS NULL",
+                "UPDATE tasks SET user_id = '\(userId)' WHERE user_id IS NULL",
+                "UPDATE challenges SET user_id = '\(userId)' WHERE user_id IS NULL",
+                "UPDATE check_ins SET user_id = '\(userId)' WHERE user_id IS NULL"
+            ]
+            for sql in updateSQLs {
+                executeSQL(sql)
+            }
+        }
+
+        print("[DatabaseManager] Migrated to v2: added user_id columns")
+    }
+
+    // MARK: - Conversation CRUD
+
+    func saveConversation(_ conversation: AIConversation) -> Bool {
+        let sql = """
+        INSERT OR REPLACE INTO conversations (id, user_id, type, messages, created_at, updated_at)
+        VALUES (?, ?, ?, ?, ?, ?);
+        """
+        var statement: OpaquePointer?
+        guard sqlite3_prepare_v2(db, sql, -1, &statement, nil) == SQLITE_OK else { return false }
+        defer { sqlite3_finalize(statement) }
+        sqlite3_bind_text(statement, 1, (conversation.id as NSString).utf8String, -1, nil)
+        sqlite3_bind_text(statement, 2, (conversation.userId as NSString).utf8String, -1, nil)
+        sqlite3_bind_text(statement, 3, (conversation.type as NSString).utf8String, -1, nil)
+        let messagesData = (try? JSONEncoder().encode(conversation.messages))
+        let messagesString = messagesData.flatMap { String(data: $0, encoding: .utf8) } ?? "[]"
+        sqlite3_bind_text(statement, 4, (messagesString as NSString).utf8String, -1, nil)
+        sqlite3_bind_double(statement, 5, conversation.createdAt.timeIntervalSince1970)
+        sqlite3_bind_double(statement, 6, conversation.updatedAt.timeIntervalSince1970)
+        return sqlite3_step(statement) == SQLITE_DONE
+    }
+
+    func getConversations(forUserId userId: String, type: String? = nil) -> [AIConversation] {
+        var sql = "SELECT * FROM conversations WHERE user_id = ?"
+        if type != nil { sql += " AND type = ?" }
+        sql += " ORDER BY updated_at DESC"
+        var statement: OpaquePointer?
+        var conversations: [AIConversation] = []
+        guard sqlite3_prepare_v2(db, sql, -1, &statement, nil) == SQLITE_OK else { return [] }
+        defer { sqlite3_finalize(statement) }
+        sqlite3_bind_text(statement, 1, (userId as NSString).utf8String, -1, nil)
+        if let type = type {
+            sqlite3_bind_text(statement, 2, (type as NSString).utf8String, -1, nil)
+        }
+        while sqlite3_step(statement) == SQLITE_ROW {
+            if let conv = conversationFromStatement(statement) {
+                conversations.append(conv)
+            }
+        }
+        return conversations
+    }
+
+    func getConversation(byId id: String) -> AIConversation? {
+        let sql = "SELECT * FROM conversations WHERE id = ?"
+        var statement: OpaquePointer?
+        guard sqlite3_prepare_v2(db, sql, -1, &statement, nil) == SQLITE_OK else { return nil }
+        defer { sqlite3_finalize(statement) }
+        sqlite3_bind_text(statement, 1, (id as NSString).utf8String, -1, nil)
+        guard sqlite3_step(statement) == SQLITE_ROW else { return nil }
+        return conversationFromStatement(statement)
+    }
+
+    func deleteConversation(byId id: String) -> Bool {
+        let sql = "DELETE FROM conversations WHERE id = ?"
+        var statement: OpaquePointer?
+        guard sqlite3_prepare_v2(db, sql, -1, &statement, nil) == SQLITE_OK else { return false }
+        defer { sqlite3_finalize(statement) }
+        sqlite3_bind_text(statement, 1, (id as NSString).utf8String, -1, nil)
+        return sqlite3_step(statement) == SQLITE_DONE
+    }
+
+    private func conversationFromStatement(_ statement: OpaquePointer?) -> AIConversation? {
+        guard let statement = statement else { return nil }
+        let id = String(cString: sqlite3_column_text(statement, 0))
+        let userId = String(cString: sqlite3_column_text(statement, 1))
+        let type = String(cString: sqlite3_column_text(statement, 2))
+        let messagesString = String(cString: sqlite3_column_text(statement, 3))
+        let createdAt = Date(timeIntervalSince1970: sqlite3_column_double(statement, 4))
+        let updatedAt = Date(timeIntervalSince1970: sqlite3_column_double(statement, 5))
+        let messages = messagesString.data(using: .utf8).flatMap {
+            try? JSONDecoder().decode([AIMessage].self, from: $0)
+        } ?? []
+        let convType = ConversationType(rawValue: type) ?? .coach
+        return AIConversation(
+            id: id,
+            userId: userId,
+            type: convType,
+            messages: messages,
+            createdAt: createdAt,
+            updatedAt: updatedAt
+        )
+    }
+
+
+    // MARK: - Community CRUD
+
+    func saveCommunityGroup(_ group: CommunityGroup) -> Bool {
+        let sql = """
+        INSERT OR REPLACE INTO community_groups (id, name, theme, group_description, member_ids, admin_id, created_at, daily_check_in_goal, is_active)
+        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?);
+        """
+        var statement: OpaquePointer?
+        guard sqlite3_prepare_v2(db, sql, -1, &statement, nil) == SQLITE_OK else { return false }
+        defer { sqlite3_finalize(statement) }
+        sqlite3_bind_text(statement, 1, (group.id as NSString).utf8String, -1, nil)
+        sqlite3_bind_text(statement, 2, (group.name as NSString).utf8String, -1, nil)
+        sqlite3_bind_text(statement, 3, (group.theme as NSString).utf8String, -1, nil)
+        if let desc = group.groupDescription {
+            sqlite3_bind_text(statement, 4, (desc as NSString).utf8String, -1, nil)
+        } else { sqlite3_bind_null(statement, 4) }
+        let memberIdsData = (try? JSONEncoder().encode(group.memberIds))
+        let memberIdsString = memberIdsData.flatMap { String(data: \/bin/bash, encoding: .utf8) } ?? "[]"
+        sqlite3_bind_text(statement, 5, (memberIdsString as NSString).utf8String, -1, nil)
+        sqlite3_bind_text(statement, 6, (group.adminId as NSString).utf8String, -1, nil)
+        sqlite3_bind_double(statement, 7, group.createdAt.timeIntervalSince1970)
+        sqlite3_bind_int(statement, 8, Int32(group.dailyCheckInGoal))
+        sqlite3_bind_int(statement, 9, group.isActive ? 1 : 0)
+        return sqlite3_step(statement) == SQLITE_DONE
+    }
+
+    func getAllCommunityGroups() -> [CommunityGroup] {
+        let sql = "SELECT * FROM community_groups WHERE is_active = 1 ORDER BY created_at DESC"
+        var statement: OpaquePointer?
+        var groups: [CommunityGroup] = []
+        guard sqlite3_prepare_v2(db, sql, -1, &statement, nil) == SQLITE_OK else { return [] }
+        defer { sqlite3_finalize(statement) }
+        while sqlite3_step(statement) == SQLITE_ROW {
+            if let group = communityGroupFromStatement(statement) {
+                groups.append(group)
+            }
+        }
+        return groups
+    }
+
+    func getCommunityGroup(byId id: String) -> CommunityGroup? {
+        let sql = "SELECT * FROM community_groups WHERE id = ?"
+        var statement: OpaquePointer?
+        guard sqlite3_prepare_v2(db, sql, -1, &statement, nil) == SQLITE_OK else { return nil }
+        defer { sqlite3_finalize(statement) }
+        sqlite3_bind_text(statement, 1, (id as NSString).utf8String, -1, nil)
+        guard sqlite3_step(statement) == SQLITE_ROW else { return nil }
+        return communityGroupFromStatement(statement)
+    }
+
+    func saveCommunityPost(_ post: CommunityPost) -> Bool {
+        let sql = """
+        INSERT OR REPLACE INTO community_posts (id, group_id, author_id, author_nickname, content, image_urls, likes, comments, created_at)
+        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?);
+        """
+        var statement: OpaquePointer?
+        guard sqlite3_prepare_v2(db, sql, -1, &statement, nil) == SQLITE_OK else { return false }
+        defer { sqlite3_finalize(statement) }
+        sqlite3_bind_text(statement, 1, (post.id as NSString).utf8String, -1, nil)
+        sqlite3_bind_text(statement, 2, (post.groupId as NSString).utf8String, -1, nil)
+        sqlite3_bind_text(statement, 3, (post.authorId as NSString).utf8String, -1, nil)
+        sqlite3_bind_text(statement, 4, (post.authorNickname as NSString).utf8String, -1, nil)
+        sqlite3_bind_text(statement, 5, (post.content as NSString).utf8String, -1, nil)
+        let imageURLsData = (try? JSONEncoder().encode(post.imageURLs))
+        let imageURLsString = imageURLsData.flatMap { String(data: \/bin/bash, encoding: .utf8) } ?? "[]"
+        sqlite3_bind_text(statement, 6, (imageURLsString as NSString).utf8String, -1, nil)
+        let likesData = (try? JSONEncoder().encode(post.likes))
+        let likesString = likesData.flatMap { String(data: \/bin/bash, encoding: .utf8) } ?? "[]"
+        sqlite3_bind_text(statement, 7, (likesString as NSString).utf8String, -1, nil)
+        let commentsData = (try? JSONEncoder().encode(post.comments))
+        let commentsString = commentsData.flatMap { String(data: \/bin/bash, encoding: .utf8) } ?? "[]"
+        sqlite3_bind_text(statement, 8, (commentsString as NSString).utf8String, -1, nil)
+        sqlite3_bind_double(statement, 9, post.createdAt.timeIntervalSince1970)
+        return sqlite3_step(statement) == SQLITE_DONE
+    }
+
+    func getCommunityPosts(forGroupId groupId: String) -> [CommunityPost] {
+        let sql = "SELECT * FROM community_posts WHERE group_id = ? ORDER BY created_at DESC"
+        var statement: OpaquePointer?
+        var posts: [CommunityPost] = []
+        guard sqlite3_prepare_v2(db, sql, -1, &statement, nil) == SQLITE_OK else { return [] }
+        defer { sqlite3_finalize(statement) }
+        sqlite3_bind_text(statement, 1, (groupId as NSString).utf8String, -1, nil)
+        while sqlite3_step(statement) == SQLITE_ROW {
+            if let post = communityPostFromStatement(statement) {
+                posts.append(post)
+            }
+        }
+        return posts
+    }
+
+    func deleteCommunityPost(byId id: String) -> Bool {
+        let sql = "DELETE FROM community_posts WHERE id = ?"
+        var statement: OpaquePointer?
+        guard sqlite3_prepare_v2(db, sql, -1, &statement, nil) == SQLITE_OK else { return false }
+        defer { sqlite3_finalize(statement) }
+        sqlite3_bind_text(statement, 1, (id as NSString).utf8String, -1, nil)
+        return sqlite3_step(statement) == SQLITE_DONE
+    }
+
+    private func communityGroupFromStatement(_ statement: OpaquePointer?) -> CommunityGroup? {
+        guard let statement = statement else { return nil }
+        let id = String(cString: sqlite3_column_text(statement, 0))
+        let name = String(cString: sqlite3_column_text(statement, 1))
+        let theme = String(cString: sqlite3_column_text(statement, 2))
+        let desc: String? = sqlite3_column_text(statement, 3).map { String(cString: \/bin/bash) }
+        let memberIdsString = sqlite3_column_text(statement, 4).map { String(cString: \/bin/bash) } ?? "[]"
+        let memberIds = memberIdsString.data(using: .utf8).flatMap { try? JSONDecoder().decode([String].self, from: \/bin/bash) } ?? []
+        let adminId = String(cString: sqlite3_column_text(statement, 5))
+        let createdAt = Date(timeIntervalSince1970: sqlite3_column_double(statement, 6))
+        let dailyCheckInGoal = Int(sqlite3_column_int(statement, 7))
+        let isActive = sqlite3_column_int(statement, 8) == 1
+        return CommunityGroup(
+            id: id, name: name, theme: theme, groupDescription: desc,
+            memberIds: memberIds, adminId: adminId, createdAt: createdAt,
+            dailyCheckInGoal: dailyCheckInGoal, isActive: isActive
+        )
+    }
+
+    private func communityPostFromStatement(_ statement: OpaquePointer?) -> CommunityPost? {
+        guard let statement = statement else { return nil }
+        let id = String(cString: sqlite3_column_text(statement, 0))
+        let groupId = String(cString: sqlite3_column_text(statement, 1))
+        let authorId = String(cString: sqlite3_column_text(statement, 2))
+        let authorNickname = String(cString: sqlite3_column_text(statement, 3))
+        let content = String(cString: sqlite3_column_text(statement, 4))
+        let imageURLsString = sqlite3_column_text(statement, 5).map { String(cString: \/bin/bash) } ?? "[]"
+        let imageURLs = imageURLsString.data(using: .utf8).flatMap { try? JSONDecoder().decode([String].self, from: \/bin/bash) } ?? []
+        let likesString = sqlite3_column_text(statement, 6).map { String(cString: \/bin/bash) } ?? "[]"
+        let likes = likesString.data(using: .utf8).flatMap { try? JSONDecoder().decode([String].self, from: \/bin/bash) } ?? []
+        let commentsString = sqlite3_column_text(statement, 7).map { String(cString: \/bin/bash) } ?? "[]"
+        let comments = commentsString.data(using: .utf8).flatMap { try? JSONDecoder().decode([Comment].self, from: \/bin/bash) } ?? []
+        let createdAt = Date(timeIntervalSince1970: sqlite3_column_double(statement, 8))
+        return CommunityPost(
+            id: id, groupId: groupId, authorId: authorId, authorNickname: authorNickname,
+            content: content, imageURLs: imageURLs, likes: likes, comments: comments,
+            createdAt: createdAt
+        )
+    }
+
 }

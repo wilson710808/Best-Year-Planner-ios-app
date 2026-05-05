@@ -115,7 +115,7 @@ struct GroupCardView: View {
             }
         }
         .padding()
-        .background(Color.white)
+        .background(AppColors.cardBackground)
         .cornerRadius(12)
     }
 }
@@ -205,7 +205,7 @@ struct PostCardView: View {
             }
         }
         .padding()
-        .background(Color.white)
+        .background(AppColors.cardBackground)
         .cornerRadius(12)
     }
 }
@@ -244,7 +244,7 @@ struct LeaderboardRowView: View {
             }
         }
         .padding()
-        .background(Color.white)
+        .background(AppColors.cardBackground)
         .cornerRadius(12)
     }
 }

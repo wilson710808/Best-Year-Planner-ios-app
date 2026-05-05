@@ -21,8 +21,8 @@ public protocol AIProvider: Sendable {
     func getPartnerResponse(userId: String, query: String, partnerName: String, conversationHistory: [AIMessage]) async -> String
     
     // 摘要生成
-    func generateWeeklyReviewSummary(checkIns: [CheckIn], tasks: [Task]) -> String
-    func generateAISuggestion(forType type: ReviewType, data: [String: Any]) -> String
+    func generateWeeklyReviewSummary(checkIns: [CheckIn], tasks: [Task]) async -> String
+    func generateAISuggestion(forType type: ReviewType, data: [String: Any]) async -> String
 }
 
 // MARK: - Storage Provider Protocol

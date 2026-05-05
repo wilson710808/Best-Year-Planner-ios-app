@@ -64,8 +64,9 @@ final class OnboardingViewModel: ObservableObject {
         """
 
         // Use ServiceLocator to get AI provider (pluggable)
+        let userId = UserDefaultsManager.shared.currentUserId ?? "onboarding_\(UUID().uuidString.prefix(8))"
         let response = await aiProvider.query(
-            userId: "onboarding_\(UUID().uuidString.prefix(8))",
+            userId: userId,
             query: prompt
         )
 

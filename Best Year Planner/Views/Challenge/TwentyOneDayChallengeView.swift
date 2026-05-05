@@ -122,7 +122,7 @@ struct WeekIndicator: View {
         }
         .padding()
         .frame(maxWidth: .infinity)
-        .background(Color.white)
+        .background(AppColors.cardBackground)
         .cornerRadius(12)
     }
 }

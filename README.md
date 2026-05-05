@@ -208,3 +208,11 @@ MIT License
 **GitHub**: https://github.com/wilson710808/Best-Year-Planner-ios-app
 
 **最後更新**: 2026-05-04
+
+
+## App Group 配置（Widget 數據共享）
+
+1. 在 Xcode 中選擇主 App Target → Signing & Capabilities → 點擊 "+ Capability" → 添加 "App Groups"
+2. 添加 App Group ID：`group.com.bestyearplanner`
+3. 對 Widget Extension Target 重複上述步驟，使用**相同**的 App Group ID
+4. 確認兩個 Target 的 App Group ID 完全一致，否則 Widget 無法讀取主 App 數據

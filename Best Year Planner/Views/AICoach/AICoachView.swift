@@ -28,7 +28,7 @@ struct AICoachView: View {
                 HStack(spacing: 12) {
                     TextField(StringConstants.AICoach.chatPlaceholder, text: $viewModel.inputText)
                         .padding()
-                        .background(Color.white)
+                        .background(AppColors.cardBackground)
                         .cornerRadius(20)
                         .overlay(
                             RoundedRectangle(cornerRadius: 20)
@@ -49,7 +49,7 @@ struct AICoachView: View {
                     .disabled(viewModel.inputText.isEmpty || viewModel.isLoading)
                 }
                 .padding()
-                .background(Color.white)
+                .background(AppColors.cardBackground)
             }
             .background(AppColors.background.ignoresSafeArea())
             .navigationTitle(StringConstants.AICoach.title)

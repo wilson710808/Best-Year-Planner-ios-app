@@ -80,7 +80,7 @@ struct WeeklyReviewContainerView: View {
                                         .foregroundColor(AppColors.disabled)
                                 }
                                 .padding()
-                                .background(Color.white)
+                                .background(AppColors.cardBackground)
                                 .cornerRadius(12)
                             }
                             .padding(.horizontal)
@@ -106,9 +106,8 @@ struct WeeklyReviewContainerView: View {
 
     private func generateWeeklyReview() {
         isGenerating = true
-        viewModel.createWeeklyReview()
-        // 模擬 AI 生成延遲
-        DispatchQueue.main.asyncAfter(deadline: .now() + 2) {
+        Task {
+            await viewModel.createWeeklyReview()
             isGenerating = false
         }
     }
@@ -132,7 +131,7 @@ struct ReviewContentView: View {
                 }
                 .padding()
                 .frame(maxWidth: .infinity, alignment: .leading)
-                .background(Color.white)
+                .background(AppColors.cardBackground)
                 .cornerRadius(12)
                 .padding(.horizontal)
             }

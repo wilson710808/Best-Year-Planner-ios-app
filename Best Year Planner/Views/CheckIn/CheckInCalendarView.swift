@@ -126,7 +126,7 @@ struct CheckInCalendarView: View {
                 }
                 .padding()
                 .frame(maxWidth: .infinity, alignment: .leading)
-                .background(Color.white)
+                .background(AppColors.cardBackground)
                 .cornerRadius(12)
                 .padding(.horizontal)
             }
