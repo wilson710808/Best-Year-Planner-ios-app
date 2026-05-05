@@ -22,7 +22,6 @@ final class AICoachViewModel: ObservableObject {
 
     // MARK: - Service Locator (Pluggable AI)
     private var aiProvider: any AIProvider { ServiceLocator.shared.aiProvider }
-    private var aiService: AIService { AIService.shared }
 
     /// 加載個性化歡迎消息 + 恢復歷史對話
     func loadWelcomeMessage() async {
@@ -187,7 +186,7 @@ final class AICoachViewModel: ObservableObject {
         let missedDays = checkIns.filter { $0.date.daysBetween(Date()) > 1 && $0.status == .missed }.count
         if missedDays >= 2 {
             let data: [String: Any] = ["missedDays": missedDays]
-            let message = aiService.generateCoachMessage(forSituation: "trackDeviation", userData: data)
+            let message = generateLocalReminder(forSituation: "trackDeviation", userData: data)
             currentReminder = message
         }
     }
@@ -197,8 +196,32 @@ final class AICoachViewModel: ObservableObject {
         let completedCheckIns = checkIns.filter { $0.status == .completed }
         if let streak = completedCheckIns.first?.streakDay, streak > 0 {
             let data: [String: Any] = ["streak": streak]
-            let message = aiService.generateCoachMessage(forSituation: "streakMaintenance", userData: data)
+            let message = generateLocalReminder(forSituation: "streakMaintenance", userData: data)
             currentReminder = message
+        }
+    }
+
+    // MARK: - Local Reminder Generator (not via AI)
+    private func generateLocalReminder(forSituation situation: String, userData: [String: Any]) -> String {
+        switch situation {
+        case "trackDeviation":
+            guard let missedDays = userData["missedDays"] as? Int else {
+                return "我注意到你的進度有些落後了。不用擔心，讓我們一起找出原因並調整計劃。"
+            }
+            return "你已經連續 \(missedDays) 天沒有打卡了。這是完全正常的！讓我們重新調整目標和節奏，確保計劃切實可行。"
+
+        case "streakMaintenance":
+            guard let streak = userData["streak"] as? Int else {
+                return "保持這個勢頭！你做得很好。"
+            }
+            if streak >= 7 {
+                return "太棒了！你已經連續打卡 \(streak) 天了。這種持續性正是成功習慣的關鍵。建議設定下一個里程碑來維持動力！"
+            } else {
+                return "你已經連續打卡 \(streak) 天了！保持這個好習慣，每天進步一點點。"
+            }
+
+        default:
+            return "有什麼我可以幫助你的嗎？無論是目標設定、克服拖延還是時間管理，我都在這裡支持你。"
         }
     }
 
