@@ -176,6 +176,43 @@ final class DatabaseManager {
             );
         """
         executeSQL(createPostsTable)
+
+        let createGrowthGroupsTable = """
+        CREATE TABLE IF NOT EXISTS growth_groups (
+            id TEXT PRIMARY KEY,
+            name TEXT NOT NULL,
+            theme TEXT NOT NULL,
+            group_description TEXT,
+            goal_id TEXT,
+            dimension TEXT NOT NULL,
+            ai_partners TEXT,
+            member_ids TEXT,
+            admin_id TEXT NOT NULL,
+            created_at REAL NOT NULL,
+            daily_check_in_goal INTEGER DEFAULT 1,
+            is_active INTEGER DEFAULT 1,
+            day_number INTEGER DEFAULT 1,
+            total_days INTEGER DEFAULT 21,
+            group_milestone TEXT
+        );
+        """
+        executeSQL(createGrowthGroupsTable)
+
+        let createGroupActivitiesTable = """
+        CREATE TABLE IF NOT EXISTS group_activities (
+            id TEXT PRIMARY KEY,
+            group_id TEXT NOT NULL,
+            partner_id TEXT,
+            user_id TEXT,
+            author_name TEXT NOT NULL,
+            author_emoji TEXT,
+            activity_type TEXT NOT NULL,
+            content TEXT NOT NULL,
+            created_at REAL NOT NULL,
+            FOREIGN KEY (group_id) REFERENCES growth_groups(id)
+        );
+        """
+        executeSQL(createGroupActivitiesTable)
     }
 
     private func executeSQL(_ sql: String) {
@@ -1028,6 +1065,10 @@ final class DatabaseManager {
             "CREATE INDEX IF NOT EXISTS idx_reviews_type_period ON reviews(type, period)",
             "CREATE INDEX IF NOT EXISTS idx_community_posts_group ON community_posts(group_id)",
             "CREATE INDEX IF NOT EXISTS idx_community_posts_author ON community_posts(author_id)",
+        "CREATE INDEX IF NOT EXISTS idx_growth_groups_dimension ON growth_groups(dimension)",
+        "CREATE INDEX IF NOT EXISTS idx_growth_groups_admin ON growth_groups(admin_id)",
+        "CREATE INDEX IF NOT EXISTS idx_group_activities_group ON group_activities(group_id)",
+        "CREATE INDEX IF NOT EXISTS idx_group_activities_type ON group_activities(activity_type)",
             "CREATE INDEX IF NOT EXISTS idx_daily_challenge_tasks_challenge ON daily_challenge_tasks(challenge_id)",
             "CREATE INDEX IF NOT EXISTS idx_daily_challenge_tasks_challenge_day ON daily_challenge_tasks(challenge_id, day_number)"
         ]
@@ -1320,6 +1361,161 @@ final class DatabaseManager {
             content: content, imageURLs: imageURLs, likes: likes, comments: comments,
             createdAt: createdAt
         )
+    }
+
+
+    // MARK: - GrowthGroup CRUD
+
+    func saveGrowthGroup(_ group: GrowthGroup) -> Bool {
+        let sql = """
+        INSERT OR REPLACE INTO growth_groups (id, name, theme, group_description, goal_id, dimension, ai_partners, member_ids, admin_id, created_at, daily_check_in_goal, is_active, day_number, total_days, group_milestone)
+        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?);
+        """
+        var statement: OpaquePointer?
+        guard sqlite3_prepare_v2(db, sql, -1, &statement, nil) == SQLITE_OK else { return false }
+        defer { sqlite3_finalize(statement) }
+        sqlite3_bind_text(statement, 1, (group.id as NSString).utf8String, -1, nil)
+        sqlite3_bind_text(statement, 2, (group.name as NSString).utf8String, -1, nil)
+        sqlite3_bind_text(statement, 3, (group.theme as NSString).utf8String, -1, nil)
+        if let desc = group.groupDescription as String?, !desc.isEmpty {
+            sqlite3_bind_text(statement, 4, (desc as NSString).utf8String, -1, nil)
+        } else { sqlite3_bind_null(statement, 4) }
+        if let goalId = group.goalId {
+            sqlite3_bind_text(statement, 5, (goalId as NSString).utf8String, -1, nil)
+        } else { sqlite3_bind_null(statement, 5) }
+        sqlite3_bind_text(statement, 6, (group.dimension.rawValue as NSString).utf8String, -1, nil)
+        let partnersData = (try? JSONEncoder().encode(group.aiPartners))
+        let partnersStr = partnersData.flatMap { String(data: $0, encoding: .utf8) } ?? "[]"
+        sqlite3_bind_text(statement, 7, (partnersStr as NSString).utf8String, -1, nil)
+        let memberIdsData = (try? JSONEncoder().encode(group.memberIds))
+        let memberIdsStr = memberIdsData.flatMap { String(data: $0, encoding: .utf8) } ?? "[]"
+        sqlite3_bind_text(statement, 8, (memberIdsStr as NSString).utf8String, -1, nil)
+        sqlite3_bind_text(statement, 9, (group.adminId as NSString).utf8String, -1, nil)
+        sqlite3_bind_double(statement, 10, group.createdAt.timeIntervalSince1970)
+        sqlite3_bind_int(statement, 11, Int32(group.dailyCheckInGoal))
+        sqlite3_bind_int(statement, 12, group.isActive ? 1 : 0)
+        sqlite3_bind_int(statement, 13, Int32(group.dayNumber))
+        sqlite3_bind_int(statement, 14, Int32(group.totalDays))
+        if let milestone = group.groupMilestone as String?, !milestone.isEmpty {
+            sqlite3_bind_text(statement, 15, (milestone as NSString).utf8String, -1, nil)
+        } else { sqlite3_bind_null(statement, 15) }
+        return sqlite3_step(statement) == SQLITE_DONE
+    }
+
+    func getAllGrowthGroups() -> [GrowthGroup] {
+        let sql = "SELECT * FROM growth_groups WHERE is_active = 1 ORDER BY created_at DESC"
+        var statement: OpaquePointer?
+        var groups: [GrowthGroup] = []
+        guard sqlite3_prepare_v2(db, sql, -1, &statement, nil) == SQLITE_OK else { return [] }
+        defer { sqlite3_finalize(statement) }
+        while sqlite3_step(statement) == SQLITE_ROW {
+            if let group = growthGroupFromStatement(statement) {
+                groups.append(group)
+            }
+        }
+        return groups
+    }
+
+    func getGrowthGroup(byId id: String) -> GrowthGroup? {
+        let sql = "SELECT * FROM growth_groups WHERE id = ?"
+        var statement: OpaquePointer?
+        guard sqlite3_prepare_v2(db, sql, -1, &statement, nil) == SQLITE_OK else { return nil }
+        defer { sqlite3_finalize(statement) }
+        sqlite3_bind_text(statement, 1, (id as NSString).utf8String, -1, nil)
+        guard sqlite3_step(statement) == SQLITE_ROW else { return nil }
+        return growthGroupFromStatement(statement)
+    }
+
+    func deleteGrowthGroup(byId id: String) -> Bool {
+        let sql = "DELETE FROM growth_groups WHERE id = ?"
+        var statement: OpaquePointer?
+        guard sqlite3_prepare_v2(db, sql, -1, &statement, nil) == SQLITE_OK else { return false }
+        defer { sqlite3_finalize(statement) }
+        sqlite3_bind_text(statement, 1, (id as NSString).utf8String, -1, nil)
+        return sqlite3_step(statement) == SQLITE_DONE
+    }
+
+    private func growthGroupFromStatement(_ statement: OpaquePointer?) -> GrowthGroup? {
+        guard let statement = statement else { return nil }
+        let id = String(cString: sqlite3_column_text(statement, 0))
+        let name = String(cString: sqlite3_column_text(statement, 1))
+        let theme = String(cString: sqlite3_column_text(statement, 2))
+        let desc: String? = sqlite3_column_text(statement, 3).map { String(cString: $0) }
+        let goalId: String? = sqlite3_column_text(statement, 4).map { String(cString: $0) }
+        let dimensionRaw = String(cString: sqlite3_column_text(statement, 5))
+        let dimension = GoalDimension(rawValue: dimensionRaw) ?? .growth
+        let partnersStr = sqlite3_column_text(statement, 6).map { String(cString: $0) } ?? "[]"
+        let partners = partnersStr.data(using: .utf8).flatMap { try? JSONDecoder().decode([AIPartner].self, from: $0) } ?? []
+        let memberIdsStr = sqlite3_column_text(statement, 7).map { String(cString: $0) } ?? "[]"
+        let memberIds = memberIdsStr.data(using: .utf8).flatMap { try? JSONDecoder().decode([String].self, from: $0) } ?? []
+        let adminId = String(cString: sqlite3_column_text(statement, 8))
+        let createdAt = Date(timeIntervalSince1970: sqlite3_column_double(statement, 9))
+        let dailyCheckInGoal = Int(sqlite3_column_int(statement, 10))
+        let isActive = sqlite3_column_int(statement, 11) == 1
+        let dayNumber = Int(sqlite3_column_int(statement, 12))
+        let totalDays = Int(sqlite3_column_int(statement, 13))
+        let milestone: String? = sqlite3_column_text(statement, 14).map { String(cString: $0) }
+        return GrowthGroup(
+            id: id, name: name, theme: theme, groupDescription: desc ?? "",
+            goalId: goalId, dimension: dimension, aiPartners: partners,
+            memberIds: memberIds, adminId: adminId, createdAt: createdAt,
+            dailyCheckInGoal: dailyCheckInGoal, isActive: isActive,
+            dayNumber: dayNumber, totalDays: totalDays, groupMilestone: milestone ?? ""
+        )
+    }
+
+    // MARK: - GroupActivity CRUD
+
+    func saveGroupActivity(_ activity: GroupActivity) -> Bool {
+        let sql = """
+        INSERT OR REPLACE INTO group_activities (id, group_id, partner_id, user_id, author_name, author_emoji, activity_type, content, created_at)
+        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?);
+        """
+        var statement: OpaquePointer?
+        guard sqlite3_prepare_v2(db, sql, -1, &statement, nil) == SQLITE_OK else { return false }
+        defer { sqlite3_finalize(statement) }
+        sqlite3_bind_text(statement, 1, (activity.id as NSString).utf8String, -1, nil)
+        sqlite3_bind_text(statement, 2, (activity.groupId as NSString).utf8String, -1, nil)
+        if let pid = activity.partnerId {
+            sqlite3_bind_text(statement, 3, (pid as NSString).utf8String, -1, nil)
+        } else { sqlite3_bind_null(statement, 3) }
+        if let uid = activity.userId {
+            sqlite3_bind_text(statement, 4, (uid as NSString).utf8String, -1, nil)
+        } else { sqlite3_bind_null(statement, 4) }
+        sqlite3_bind_text(statement, 5, (activity.authorName as NSString).utf8String, -1, nil)
+        sqlite3_bind_text(statement, 6, (activity.authorEmoji as NSString).utf8String, -1, nil)
+        sqlite3_bind_text(statement, 7, (activity.activityType.rawValue as NSString).utf8String, -1, nil)
+        sqlite3_bind_text(statement, 8, (activity.content as NSString).utf8String, -1, nil)
+        sqlite3_bind_double(statement, 9, activity.createdAt.timeIntervalSince1970)
+        return sqlite3_step(statement) == SQLITE_DONE
+    }
+
+    func getGroupActivities(forGroupId groupId: String) -> [GroupActivity] {
+        let sql = "SELECT * FROM group_activities WHERE group_id = ? ORDER BY created_at DESC"
+        var statement: OpaquePointer?
+        var activities: [GroupActivity] = []
+        guard sqlite3_prepare_v2(db, sql, -1, &statement, nil) == SQLITE_OK else { return [] }
+        defer { sqlite3_finalize(statement) }
+        sqlite3_bind_text(statement, 1, (groupId as NSString).utf8String, -1, nil)
+        while sqlite3_step(statement) == SQLITE_ROW {
+            let id = String(cString: sqlite3_column_text(statement, 0))
+            let groupId = String(cString: sqlite3_column_text(statement, 1))
+            let partnerId: String? = sqlite3_column_text(statement, 2).map { String(cString: $0) }
+            let userId: String? = sqlite3_column_text(statement, 3).map { String(cString: $0) }
+            let authorName = String(cString: sqlite3_column_text(statement, 4))
+            let authorEmoji = sqlite3_column_text(statement, 5).map { String(cString: $0) } ?? "🧑"
+            let typeRaw = String(cString: sqlite3_column_text(statement, 6))
+            let activityType = GroupActivityType(rawValue: typeRaw) ?? .checkIn
+            let content = String(cString: sqlite3_column_text(statement, 7))
+            let createdAt = Date(timeIntervalSince1970: sqlite3_column_double(statement, 8))
+            let activity = GroupActivity(
+                id: id, groupId: groupId, partnerId: partnerId, userId: userId,
+                authorName: authorName, authorEmoji: authorEmoji,
+                activityType: activityType, content: content, createdAt: createdAt
+            )
+            activities.append(activity)
+        }
+        return activities
     }
 
 }
