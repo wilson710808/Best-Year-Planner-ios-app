@@ -229,27 +229,3 @@ struct ReviewContentView: View {
     }
 }
 
-struct ReviewDetailView: View {
-    let review: Review
-
-    var body: some View {
-        ScrollView {
-            VStack(spacing: 16) {
-                Text(review.period)
-                    .font(.title3)
-                    .fontWeight(.semibold)
-                    .foregroundColor(AppColors.textPrimary)
-
-                Text(review.createdAt.formatted(AppConstants.DateFormats.displayDateTime))
-                    .font(.caption)
-                    .foregroundColor(AppColors.textSecondary)
-
-                ReviewContentView(review: review)
-            }
-            .padding()
-        }
-        .background(AppColors.background.ignoresSafeArea())
-        .navigationTitle(review.type.displayName)
-        .navigationBarTitleDisplayMode(.inline)
-    }
-}

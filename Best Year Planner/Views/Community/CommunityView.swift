@@ -120,45 +120,6 @@ struct GroupCardView: View {
     }
 }
 
-struct GroupDetailView: View {
-    let group: CommunityGroup
-    @ObservedObject var viewModel: CommunityViewModel
-    @State private var selectedTab = 0
-
-    var body: some View {
-        VStack(spacing: 0) {
-            Picker("", selection: $selectedTab) {
-                Text(StringConstants.Community.posts).tag(0)
-                Text(StringConstants.Community.leaderboard).tag(1)
-            }
-            .pickerStyle(.segmented)
-            .padding()
-
-            if selectedTab == 0 {
-                ScrollView {
-                    LazyVStack(spacing: 12) {
-                        ForEach(viewModel.posts) { post in
-                            PostCardView(post: post)
-                        }
-                    }
-                    .padding(.horizontal)
-                }
-            } else {
-                ScrollView {
-                    LazyVStack(spacing: 12) {
-                        ForEach(Array(viewModel.leaderboard.enumerated()), id: \.element.id) { index, member in
-                            LeaderboardRowView(rank: index + 1, member: member)
-                        }
-                    }
-                    .padding(.horizontal)
-                }
-            }
-        }
-        .background(AppColors.background)
-        .navigationTitle(group.name)
-        .navigationBarTitleDisplayMode(.inline)
-    }
-}
 
 struct PostCardView: View {
     let post: CommunityPost

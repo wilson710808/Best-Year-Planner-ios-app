@@ -465,33 +465,6 @@ struct BuddyDetailView: View {
 
 // MARK: - Stat Card Component
 
-struct StatCard: View {
-    let icon: String
-    let iconColor: Color
-    let value: String
-    let label: String
-    
-    var body: some View {
-        VStack(spacing: 8) {
-            Image(systemName: icon)
-                .font(.title3)
-                .foregroundColor(iconColor)
-            
-            Text(value)
-                .font(.headline)
-                .foregroundColor(AppColors.textPrimary)
-            
-            Text(label)
-                .font(.caption2)
-                .foregroundColor(AppColors.textSecondary)
-        }
-        .frame(maxWidth: .infinity)
-        .padding(.vertical, 16)
-        .background(Color.white)
-        .cornerRadius(12)
-        .shadow(color: Color.black.opacity(0.03), radius: 4, x: 0, y: 2)
-    }
-}
 
 #Preview {
     BuddyDetailView(

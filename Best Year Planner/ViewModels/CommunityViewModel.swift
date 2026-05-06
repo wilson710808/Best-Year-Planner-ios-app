@@ -117,4 +117,13 @@ final class CommunityViewModel: ObservableObject {
         posts.removeAll()
         leaderboard.removeAll()
     }
+    
+    // MARK: - 便利方法（供 GroupDetailView 使用）
+    func getMembers(for groupId: String) -> [GroupMember] {
+        communityService.getGroupLeaderboard(groupId)
+    }
+    
+    func getPosts(for groupId: String) -> [CommunityPost] {
+        communityService.getPosts(forGroupId: groupId)
+    }
 }

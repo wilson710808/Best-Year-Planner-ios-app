@@ -33,71 +33,7 @@ struct ProgressRingView: View {
     }
 }
 
-struct DimensionProgressView: View {
-    let dimension: GoalDimension
-    let progress: Double
 
-    var body: some View {
-        VStack(spacing: 8) {
-            ZStack {
-                Circle()
-                    .stroke(Color(hex: dimension.color).opacity(0.2), lineWidth: 6)
-
-                Circle()
-                    .trim(from: 0, to: CGFloat(min(progress, 1.0)))
-                    .stroke(
-                        Color(hex: dimension.color),
-                        style: StrokeStyle(lineWidth: 6, lineCap: .round)
-                    )
-                    .rotationEffect(.degrees(-90))
-
-                Image(systemName: dimension.icon)
-                    .foregroundColor(Color(hex: dimension.color))
-                    .font(.system(size: 14))
-            }
-            .frame(width: 50, height: 50)
-
-            Text("\(Int(progress * 100))%")
-                .font(.caption)
-                .fontWeight(.semibold)
-                .foregroundColor(AppColors.textPrimary)
-
-            Text(dimension.displayName)
-                .font(.caption2)
-                .foregroundColor(AppColors.textSecondary)
-                .lineLimit(1)
-        }
-        .frame(maxWidth: .infinity)
-    }
-}
-
-struct WeeklySummaryView: View {
-    let completionRate: Double
-    let totalCheckIns: Int
-    let streakDays: Int
-
-    var body: some View {
-        HStack(spacing: 16) {
-            SummaryCardView(
-                icon: "chart.bar.fill",
-                value: "\(Int(completionRate * 100))%",
-                label: StringConstants.Dashboard.thisWeek
-            )
-
-            SummaryCardView(
-                icon: "checkmark.circle.fill",
-                value: "\(totalCheckIns)",
-                label: "打卡次數"
-            )
-
-            SummaryCardView(
-                icon: "flame.fill",
-                value: "\(streakDays)",
-                label: StringConstants.Dashboard.streakDays
-            )
-        }
-    }
-}
 
 struct SummaryCardView: View {
     let icon: String
