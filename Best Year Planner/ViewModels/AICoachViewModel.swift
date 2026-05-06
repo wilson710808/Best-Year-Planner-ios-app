@@ -90,10 +90,27 @@ final class AICoachViewModel: ObservableObject {
 
         print("[AICoachViewModel] Generating response for user: \(currentUser.id), query: \(userInput)")
 
+        // 情境感知：根據用戶狀態調整 prompt
+        var contextAwareQuery = userInput
+        let consecutiveMissed = calculateConsecutiveMissedDays()
+        let consecutiveDone = calculateConsecutiveCompletedDays()
+        let weekday = Calendar.current.component(.weekday, from: Date())
+        let coachStyle = CoachStyle(rawValue: UserDefaults.standard.string(forKey: "coachStyle") ?? "warm") ?? .warm
+        if consecutiveMissed >= 3 {
+            contextAwareQuery = "[重要：用戶已連續\(consecutiveMissed)天未打卡，處於挫折狀態。請切換到鼓勵模式，不要質問，而是理解、安慰、給出小步驟建議。\(coachStyle.systemPromptSuffix)] " + userInput
+        } else if consecutiveDone >= 21 {
+            contextAwareQuery = "[用戶已連續打卡21天，習慣已建立！恭喜他/她，引導思考下一個成長方向。\(coachStyle.systemPromptSuffix)] " + userInput
+        } else if weekday == 2 {
+            contextAwareQuery = "[今天是週一，新的一週開始。引導用戶思考本週最重要的3件事。\(coachStyle.systemPromptSuffix)] " + userInput
+        } else if weekday == 6 {
+            contextAwareQuery = "[今天是週五，這週做得很好。肯定用戶的努力，建議適當放鬆。\(coachStyle.systemPromptSuffix)] " + userInput
+        } else if consecutiveDone >= 7 {
+            contextAwareQuery = "[用戶已連續打卡7天以上，習慣正在建立。繼續鼓勵，提醒注意倦怠期。\(coachStyle.systemPromptSuffix)] " + userInput
+        }
         // 調用 AI Provider，傳遞完整對話歷史以支持上下文理解
         let response = await aiProvider.getCoachResponse(
             userId: currentUser.id,
-            query: userInput,
+            query: contextAwareQuery,
             conversationHistory: messages
         )
         return response
@@ -201,6 +218,41 @@ final class AICoachViewModel: ObservableObject {
         }
     }
 
+    // MARK: - 連續天數計算
+    private func calculateConsecutiveMissedDays() -> Int {
+        var count = 0
+        let calendar = Calendar.current
+        let allCheckIns = checkInService.getAllCheckIns()
+        var date = calendar.date(byAdding: .day, value: -1, to: Date().startOfDay) ?? Date().startOfDay
+        while count < 30 {
+            let dayCheckIns = allCheckIns.filter { calendar.isDate($0.date, inSameDayAs: date) }
+            if dayCheckIns.isEmpty || dayCheckIns.allSatisfy({ $0.status == .missed }) {
+                count += 1
+                date = calendar.date(byAdding: .day, value: -1, to: date) ?? date
+            } else {
+                break
+            }
+        }
+        return count
+    }
+    
+    private func calculateConsecutiveCompletedDays() -> Int {
+        var count = 0
+        let calendar = Calendar.current
+        let allCheckIns = checkInService.getAllCheckIns()
+        var date = Date().startOfDay
+        while count < 100 {
+            let dayCheckIns = allCheckIns.filter { calendar.isDate($0.date, inSameDayAs: date) }
+            if dayCheckIns.contains(where: { $0.status == .completed }) {
+                count += 1
+                date = calendar.date(byAdding: .day, value: -1, to: date) ?? date
+            } else {
+                break
+            }
+        }
+        return count
+    }
+    
     // MARK: - Local Reminder Generator (not via AI)
     private func generateLocalReminder(forSituation situation: String, userData: [String: Any]) -> String {
         switch situation {
@@ -232,4 +284,14 @@ final class AICoachViewModel: ObservableObject {
     func loadMonthlyReview() {
         currentReview = reviewService.createMonthlyReview()
     }
+}
+
+// MARK: - 用戶情境枚舉
+enum UserSituation {
+    case normal
+    case frustration       // 連續3天未打卡
+    case buildingHabit     // 連續7天打卡
+    case habitEstablished  // 連續21天打卡
+    case newWeek           // 週一
+    case weekendRelax      // 週五
 }
