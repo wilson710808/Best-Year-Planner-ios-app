@@ -74,10 +74,7 @@ struct ChangePasswordView: View {
             return
         }
         
-        let result = AuthService.shared.changePassword(
-            oldPassword: currentPassword,
-            newPassword: newPassword
-        )
+        let result = viewModel.changePassword(oldPassword: currentPassword, newPassword: newPassword)
         switch result {
         case .success:
             showSuccess = true

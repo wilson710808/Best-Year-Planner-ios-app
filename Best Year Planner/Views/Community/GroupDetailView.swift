@@ -30,7 +30,7 @@ struct GroupDetailView: View {
                             }
                             
                             // 最近動態
-                            let activities = viewModel.activities(for: groupId)
+                            let activities = viewModel.activities
                             if !activities.isEmpty {
                                 VStack(alignment: .leading, spacing: 12) {
                                     Text("📝 最近動態")

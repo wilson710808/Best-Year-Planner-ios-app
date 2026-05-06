@@ -132,7 +132,7 @@ struct CheckInView: View {
                         }
                         ToolbarItem(placement: .confirmationAction) {
                             Button("確認補卡") {
-                                let _ = CheckInService.shared.makeUpCheckIn(
+                                let _ = viewModel.makeUpCheckIn(
                                     taskId: makeUpTaskId,
                                     originalDate: Date().addingTimeInterval(-86400),
                                     reason: makeUpReason,

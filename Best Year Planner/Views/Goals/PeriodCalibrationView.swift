@@ -203,7 +203,7 @@ struct PeriodCalibrationView: View {
             調整計劃：\(adjustments.filter { !$0.isEmpty }.joined(separator: "、"))
             目標調整：\(goalAdjustments.filter { !$0.isEmpty }.joined(separator: "、"))
             """
-            let service = AIService.shared
+            let service = ServiceLocator.shared.aiProvider
             let prompt = "你是《規劃最好的一年》的AI教練。根據用戶的\(periodLabel)校正數據，生成簡潔的校正建議報告（200字以內），包含：1)肯定已完成的事 2)分析卡住的原因 3)具體可行的調整建議：\n\(summary)"
             let result = await service.sendPrompt(prompt)
             aiReport = result

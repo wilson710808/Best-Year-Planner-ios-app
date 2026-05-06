@@ -51,7 +51,7 @@ struct ProfileEditView: View {
                 Button("好") { dismiss() }
             }
             .onAppear {
-                if let user = AuthService.shared.getCurrentUser() {
+                if let user = viewModel.currentUser {
                     nickname = user.nickname
                     account = user.account
                 }
@@ -60,11 +60,9 @@ struct ProfileEditView: View {
     }
     
     private func saveProfile() {
-        if let user = AuthService.shared.getCurrentUser() {
-            var updated = user
-            updated.nickname = nickname
-            _ = AuthService.shared.updateUser(updated)
+        let success = viewModel.updateProfile(nickname: nickname, gender: nil, birthYear: nil)
+        if success {
+            showSaveSuccess = true
         }
-        showSaveSuccess = true
     }
 }
