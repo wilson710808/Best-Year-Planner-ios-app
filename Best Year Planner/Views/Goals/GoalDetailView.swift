@@ -150,6 +150,61 @@ struct GoalDetailView: View {
                     .padding(.horizontal)
                 }
 
+                        // 增強功能入口
+                        VStack(spacing: 12) {
+                            NavigationLink(destination: GoalMotivationView(goalId: goal.id, goalTitle: goal.title)) {
+                                HStack {
+                                    Image(systemName: "heart.circle.fill")
+                                        .foregroundColor(AppColors.accent)
+                                    Text("找到為什麼")
+                                        .font(.subheadline)
+                                    Spacer()
+                                    Image(systemName: "chevron.right")
+                                        .foregroundColor(AppColors.textSecondary)
+                                        .font(.caption)
+                                }
+                                .frame(maxWidth: .infinity)
+                                .padding()
+                                .background(AppColors.accent.opacity(0.1))
+                                .cornerRadius(12)
+                            }
+                            
+                            NavigationLink(destination: SMARTERScorerView(goalId: goal.id, goalTitle: goal.title)) {
+                                HStack {
+                                    Image(systemName: "target")
+                                        .foregroundColor(AppColors.primary)
+                                    Text("SMARTER 評分")
+                                        .font(.subheadline)
+                                    Spacer()
+                                    Image(systemName: "chevron.right")
+                                        .foregroundColor(AppColors.textSecondary)
+                                        .font(.caption)
+                                }
+                                .frame(maxWidth: .infinity)
+                                .padding()
+                                .background(AppColors.primary.opacity(0.1))
+                                .cornerRadius(12)
+                            }
+                            
+                            NavigationLink(destination: GoalIndicatorsView(goalId: goal.id, goalTitle: goal.title)) {
+                                HStack {
+                                    Image(systemName: "figure.run")
+                                        .foregroundColor(AppColors.success)
+                                    Text("領先/滯後指標")
+                                        .font(.subheadline)
+                                    Spacer()
+                                    Image(systemName: "chevron.right")
+                                        .foregroundColor(AppColors.textSecondary)
+                                        .font(.caption)
+                                }
+                                .frame(maxWidth: .infinity)
+                                .padding()
+                                .background(AppColors.success.opacity(0.1))
+                                .cornerRadius(12)
+                            }
+                        }
+                        .padding(.horizontal)
+
                 // 操作按鈕
                 VStack(spacing: 12) {
                     if isEditing {

@@ -189,6 +189,35 @@ struct DashboardView: View {
                     }
                     .padding(.horizontal)
 
+                        // 今日信念提醒
+                        if let beliefReminder = getDailyBeliefReminder() {
+                            NavigationLink(destination: BeliefTrackerView()) {
+                                HStack(spacing: 12) {
+                                    Image(systemName: "lightbulb.fill")
+                                        .foregroundColor(AppColors.accent)
+                                        .font(.title3)
+                                    VStack(alignment: .leading, spacing: 2) {
+                                        Text("💡 今日信念提醒")
+                                            .font(.subheadline)
+                                            .fontWeight(.medium)
+                                            .foregroundColor(AppColors.textPrimary)
+                                        Text(beliefReminder)
+                                            .font(.caption)
+                                            .foregroundColor(AppColors.textSecondary)
+                                            .lineLimit(2)
+                                    }
+                                    Spacer()
+                                    Image(systemName: "chevron.right")
+                                        .foregroundColor(AppColors.textSecondary)
+                                        .font(.caption)
+                                }
+                                .padding()
+                                .background(AppColors.cardBackground)
+                                .cornerRadius(12)
+                            }
+                            .padding(.horizontal)
+                        }
+
                     // Quick Check-In Section
                     QuickCheckInSection()
                         .padding(.horizontal)
@@ -213,6 +242,10 @@ struct DashboardView: View {
                             QuickActionCard(icon: "person.3.fill", title: "揪團成長", color: AppColors.secondary) {
                                 showBuddyGroup = true
                             }
+                QuickActionCard(icon: "flag.fill", title: "里程碑", color: Color.purple) { /* Navigate to MilestoneWallView */ }
+                QuickActionCard(icon: "chart.bar.doc.horizontal", title: "熱力圖", color: AppColors.success) { /* Navigate to HabitHeatmapView */ }
+                QuickActionCard(icon: "bolt.heart.fill", title: "能量曲線", color: Color.orange) { /* Navigate to EnergyCurveView */ }
+                QuickActionCard(icon: "calendar.badge.checkmark", title: "季度校正", color: AppColors.primary) { /* Navigate to PeriodCalibrationView */ }
                         }
                         .padding(.horizontal)
                     }
@@ -233,6 +266,18 @@ struct DashboardView: View {
             }
         }
         return nil
+    }
+
+    private func getDailyBeliefReminder() -> String? {
+        let userId = UserDefaultsManager.shared.currentUserId ?? ""
+        let service = GoalEnhancementService.shared
+        let beliefs = service.loadLimitingBeliefs(userId: userId)
+        let activeBeliefs = beliefs.filter { $0.isSelected && $0.empoweringResponse != nil }
+        guard !activeBeliefs.isEmpty else { return nil }
+        let dayOfYear = Calendar.current.ordinality(of: .day, in: .year, for: Date()) ?? 1
+        let index = dayOfYear % activeBeliefs.count
+        let belief = activeBeliefs[index]
+        return belief.empoweringResponse ?? belief.reframedText ?? "你可以做到的！"
     }
 
     private var onAppearBackup: Bool { true }

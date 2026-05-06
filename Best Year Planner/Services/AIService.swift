@@ -26,6 +26,12 @@ final class AIService: AIProvider, Sendable {
     private let appId = "bestyearplanner"
 
     /// AIProvider 協議方法：查詢 AI 回覆
+    /// 便利方法：直接發送 prompt 給 AI（不需要 userId，自動獲取）
+    func sendPrompt(_ prompt: String) async -> String {
+        let userId = UserDefaultsManager.shared.currentUserId ?? "anonymous"
+        return await query(userId: userId, query: prompt)
+    }
+
     public func query(userId: String, query: String) async -> String {
         return await queryAIGateway(userId: userId, query: query)
     }
