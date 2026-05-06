@@ -1,5 +1,5 @@
 # Best Year Planner - 開發狀態追蹤
-更新時間: 2026-05-06 12:45
+更新時間: 2026-05-06 12:50
 
 ---
 
@@ -7,8 +7,9 @@
 
 | 項目 | 值 |
 |------|-----|
-| 最新 Commit | 4a45362 |
-| Swift 文件數 | 117 |
+| 最新 Commit | e06be3f |
+| Swift 文件數 | 139 |
+| 總代碼行數 | 26,901 |
 | 架構 | MVVM + ServiceLocator |
 | 最低版本 | iOS 16.0+ |
 
@@ -34,8 +35,37 @@
 
 ### 數據層
 - [x] SQLite 本地存儲
-- [x] 15+ 數據表
+- [x] 19 數據表
 - [x] MockAIService 測試支撐
+
+### 書籍核心概念強化
+- [x] 信念轉化系統 (296行 Prompt)
+- [x] 信念追蹤持久化 (BeliefRecord + CRUD)
+- [x] 總結過去 (PastReviewView 4步引導)
+- [x] SMARTER 評分器 (7維度雷達圖)
+- [x] 領先/滯後指標 (GoalIndicatorsView)
+- [x] 里程碑牆 (MilestoneWallView)
+- [x] 週期校正 (PeriodCalibrationView)
+- [x] 待棄清單 (AbandonListView)
+
+### 用戶易用性優化
+- [x] 逐步解鎖機制 (FeatureUnlock Day 1/3/7/14)
+- [x] 一鍵打卡 (QuickCheckInSection)
+- [x] 批量打卡 (batchCheckIn)
+- [x] 補卡機制 (MakeUpCheckIn + 反思)
+- [x] 無干擾模式 (FocusModeView)
+- [x] 完成慶祝動畫 (CheckInCelebrationOverlay)
+
+### AI 體驗優化
+- [x] 教練風格選擇 (4種：嚴格/溫暖/理性/幽默)
+- [x] 情境感知回應 (週一/週五/連續打卡)
+- [x] 挫折模式自動切換 (連續3天未打卡→鼓勵)
+- [x] 每日 AI Tip (快取機制)
+
+### 數據呈現
+- [x] 習慣熱力圖 (HabitHeatmapView)
+- [x] 能量曲線 (EnergyCurveView)
+- [x] 進階數據分析 (AdvancedAnalyticsView)
 
 ### 測試
 - [x] 單元測試 (662行)
@@ -86,14 +116,17 @@
 
 ---
 
-## ⚠️ 待解決問題
+## ⏳ 待完成功能 (6項)
 
-✅ **所有 ABCD 任務已完成**
+### 🔴 P0 - 上架前必須
+1. **Xcode 實際編譯驗證** - 確保無語法錯誤
+2. **App Store 截圖製作** - 5張截圖 + 1張預覽視頻
 
-待 App Store 上架：
-1. App Icon 上傳
-2. 截圖準備
-3. App Store Connect 提交
+### 🟠 P1 - 功能完善
+3. **目標上限提醒** - 超過5個活躍目標時彈出警告
+4. **動機耗盡提醒** - 連續3天未打卡時顯示原始動機
+5. **「找到為什麼」挖掘** - 每個目標強制輸入3個為什麼
+6. **夥伴「掉鏈子」真實感** - AI夥伴偶爾也會錯過打卡
 
 ---
 
