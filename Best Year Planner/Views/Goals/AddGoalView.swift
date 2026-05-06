@@ -14,6 +14,10 @@ struct AddGoalView: View {
     @State private var goalWhys: [String] = ["", "", ""]
     @State private var showWhysWarning = false
     
+    // 目標上限提醒
+    @State private var showGoalLimitAlert = false
+    private let goalLimit = 5
+    
     var body: some View {
         NavigationStack {
             Form {
@@ -129,9 +133,42 @@ struct AddGoalView: View {
                 Text("沒有寫下「為什麼」，目標很容易放棄。建議至少寫1個動機。")
             }
         }
+        
+        // 目標上限警告彈窗
+        .overlay {
+            if showGoalLimitAlert {
+                GoalLimitWarningView(
+                    currentCount: viewModel.goals.filter { $0.status == .active }.count,
+                    maxLimit: goalLimit,
+                    isPresented: $showGoalLimitAlert,
+                    onContinue: {
+                        showGoalLimitAlert = false
+                        // 用戶確認，繼續保存流程
+                        let hasWhys = goalWhys.contains { !$0.isEmpty }
+                        if !hasWhys {
+                            showWhysWarning = true
+                        } else {
+                            confirmSaveGoal()
+                        }
+                    },
+                    onCancel: {
+                        showGoalLimitAlert = false
+                        // 用戶取消，返回頁面
+                    }
+                )
+            }
+        }
     }
     
     private func saveGoal() {
+        // 首先檢查目標上限
+        let activeCount = viewModel.goals.filter { $0.status == .active }.count
+        if activeCount >= goalLimit {
+            showGoalLimitAlert = true
+            return
+        }
+        
+        // 檢查動機
         let hasWhys = goalWhys.contains { !$0.isEmpty }
         if !hasWhys {
             showWhysWarning = true
