@@ -7,6 +7,8 @@ struct SMARTERScorerView: View {
     @StateObject private var viewModel = GoalEnhancementViewModel()
     @Environment(\.dismiss) private var dismiss
     @State private var isGenerating = false
+    @State private var showHistory = false
+    @State private var animateScore = false
 
     var body: some View {
         NavigationStack {
@@ -15,8 +17,19 @@ struct SMARTERScorerView: View {
 
                 ScrollView {
                     VStack(spacing: 20) {
-                        // Overall Score
+                        // Overall Score with Animation
                         overallScoreCard
+
+                        // Radar Chart
+                        if viewModel.currentSMARTER != nil {
+                            SMARTERRadarChart(score: viewModel.currentSMARTER!)
+                                .padding(.vertical, 8)
+                        }
+
+                        // Score History Comparison (if previous scores exist)
+                        if viewModel.smarterHistory.count > 1 {
+                            scoreHistoryCard
+                        }
 
                         // 7 Dimensions
                         ForEach(smarterDimensions, id: \.0) { key, title, icon, description, binding in
@@ -54,6 +67,7 @@ struct SMARTERScorerView: View {
                                 isGenerating = true
                                 await viewModel.saveSMARTERScore(goalId: goalId, goalTitle: goalTitle)
                                 isGenerating = false
+                                animateScore = true
                             }
                         }) {
                             HStack {
@@ -80,11 +94,17 @@ struct SMARTERScorerView: View {
                     Button("完成") { dismiss() }
                 }
             }
+            .sheet(isPresented: $showHistory) {
+                SMARTERHistoryView(goalId: goalId, goalTitle: goalTitle)
+            }
         }
         .onAppear {
             viewModel.loadSMARTERScore(goalId: goalId)
             if viewModel.currentSMARTER == nil {
                 viewModel.currentSMARTER = SMARTERScore(goalId: goalId)
+            }
+            DispatchQueue.main.asyncAfter(deadline: .now() + 0.3) {
+                animateScore = true
             }
         }
     }
@@ -102,20 +122,25 @@ struct SMARTERScorerView: View {
                     .frame(width: 100, height: 100)
 
                 Circle()
-                    .trim(from: 0, to: min(viewModel.currentSMARTER?.overallScore ?? 0 / 10.0, 1.0))
-                    .stroke(scoreColor, style: StrokeStyle(lineWidth: 8, lineCap: .round))
+                    .trim(from: 0, to: animateScore ? min((viewModel.currentSMARTER?.overallScore ?? 0) / 10.0, 1.0) : 0)
+                    .stroke(
+                        LinearGradient(colors: [scoreColor, scoreColor.opacity(0.7)], startPoint: .top, endPoint: .bottom),
+                        style: StrokeStyle(lineWidth: 8, lineCap: .round)
+                    )
                     .frame(width: 100, height: 100)
                     .rotationEffect(.degrees(-90))
+                    .animation(.easeInOut(duration: 0.8), value: animateScore)
 
-                Text(String(format: "%.1f", viewModel.currentSMARTER?.overallScore ?? 0))
-                    .font(.title)
-                    .fontWeight(.bold)
-                    .foregroundColor(AppColors.textPrimary)
+                VStack(spacing: 0) {
+                    Text(String(format: "%.1f", viewModel.currentSMARTER?.overallScore ?? 0))
+                        .font(.title)
+                        .fontWeight(.bold)
+                        .foregroundColor(AppColors.textPrimary)
 
-                Text("/10")
-                    .font(.caption)
-                    .foregroundColor(AppColors.textSecondary)
-                    .offset(y: 12)
+                    Text("/10")
+                        .font(.caption)
+                        .foregroundColor(AppColors.textSecondary)
+                }
             }
 
             Text(scoreMessage)
@@ -128,10 +153,42 @@ struct SMARTERScorerView: View {
         .cornerRadius(16)
     }
 
+    // MARK: - Score History Card
+
+    private var scoreHistoryCard: some View {
+        Button(action: { showHistory = true }) {
+            HStack(spacing: 12) {
+                Image(systemName: "chart.line.uptrend.xyaxis")
+                    .foregroundColor(AppColors.primary)
+                    .font(.title3)
+
+                VStack(alignment: .leading, spacing: 2) {
+                    Text("評分歷史")
+                        .font(.subheadline)
+                        .fontWeight(.medium)
+                        .foregroundColor(AppColors.textPrimary)
+                    Text("已評分 \(viewModel.smarterHistory.count) 次")
+                        .font(.caption)
+                        .foregroundColor(AppColors.textSecondary)
+                }
+
+                Spacer()
+
+                Image(systemName: "chevron.right")
+                    .foregroundColor(AppColors.textSecondary)
+                    .font(.caption)
+            }
+            .padding()
+            .background(AppColors.cardBackground)
+            .cornerRadius(12)
+        }
+    }
+
     private var scoreColor: Color {
         let score = viewModel.currentSMARTER?.overallScore ?? 0
         if score >= 8 { return AppColors.success }
         if score >= 6 { return AppColors.accent }
+        if score >= 4 { return Color.orange }
         return AppColors.error
     }
 
@@ -139,7 +196,8 @@ struct SMARTERScorerView: View {
         let score = viewModel.currentSMARTER?.overallScore ?? 0
         if score >= 8 { return "🌟 優秀目標！你已經做好準備了" }
         if score >= 6 { return "💪 不錯！還有一些可以強化的地方" }
-        return "🔄 建議調整目標，讓它更具行動力" }
+        if score >= 4 { return "🔍 目標需要更具體，讓我們來改善" }
+        return "🔄 建議重新定義目標，讓它更具行動力"
     }
 
     private func dimensionCard(key: String, title: String, icon: String, description: String, value: Binding<Double>) -> some View {
@@ -205,5 +263,252 @@ struct SMARTERScorerView: View {
                 set: { viewModel.currentSMARTER?.relevant = Int($0) }
             ))
         ]
+    }
+}
+
+// MARK: - SMARTER Radar Chart
+
+struct SMARTERRadarChart: View {
+    let score: SMARTERScore
+    @State private var animate = false
+
+    private let dimensions = [
+        ("具體", "S"),
+        ("可衡量", "M"),
+        ("可執行", "A"),
+        ("風險度", "R"),
+        ("時限", "T"),
+        ("興奮", "E"),
+        ("相關", "R")
+    ]
+
+    private var values: [Double] {
+        [Double(score.specific), Double(score.measurable), Double(score.actionable),
+         Double(score.risky), Double(score.timeKeyed), Double(score.exciting), Double(score.relevant)]
+    }
+
+    var body: some View {
+        VStack(spacing: 8) {
+            GeometryReader { geo in
+                let center = CGPoint(x: geo.size.width / 2, y: geo.size.height / 2)
+                let radius = min(geo.size.width, geo.size.height) / 2 - 30
+
+                ZStack {
+                    // Grid circles (2, 4, 6, 8, 10)
+                    ForEach([2.0, 4.0, 6.0, 8.0, 10.0], id: \.self) { level in
+                        Circle()
+                            .stroke(AppColors.divider.opacity(0.3), lineWidth: 0.5)
+                            .frame(width: radius * 2 * level / 10, height: radius * 2 * level / 10)
+                    }
+
+                    // Axis lines
+                    ForEach(0..<7, id: \.self) { i in
+                        Path { path in
+                            let angle = Double(i) * 2 * .pi / 7 - .pi / 2
+                            path.move(to: center)
+                            path.addLine(to: CGPoint(
+                                x: center.x + radius * cos(angle),
+                                y: center.y + radius * sin(angle)
+                            ))
+                        }
+                        .stroke(AppColors.divider.opacity(0.3), lineWidth: 0.5)
+                    }
+
+                    // Score polygon
+                    Path { path in
+                        for i in 0..<7 {
+                            let angle = Double(i) * 2 * .pi / 7 - .pi / 2
+                            let r = animate ? radius * values[i] / 10 : 0
+                            let point = CGPoint(
+                                x: center.x + r * cos(angle),
+                                y: center.y + r * sin(angle)
+                            )
+                            if i == 0 { path.move(to: point) } else { path.addLine(to: point) }
+                        }
+                        path.closeSubpath()
+                    }
+                    .fill(AppColors.primary.opacity(0.15))
+                    .stroke(AppColors.primary, lineWidth: 2)
+
+                    // Dimension labels
+                    ForEach(0..<7, id: \.self) { i in
+                        let angle = Double(i) * 2 * .pi / 7 - .pi / 2
+                        let labelR = radius + 22
+                        let x = center.x + labelR * cos(angle)
+                        let y = center.y + labelR * sin(angle)
+
+                        VStack(spacing: 1) {
+                            Text(dimensions[i].1)
+                                .font(.caption2)
+                                .fontWeight(.bold)
+                                .foregroundColor(AppColors.primary)
+                            Text("\(Int(values[i]))")
+                                .font(.system(size: 9))
+                                .foregroundColor(AppColors.textSecondary)
+                        }
+                        .position(x: x, y: y)
+                    }
+                }
+            }
+            .frame(height: 220)
+
+            Text("7 維度雷達圖")
+                .font(.caption)
+                .foregroundColor(AppColors.textSecondary)
+        }
+        .padding()
+        .background(AppColors.cardBackground)
+        .cornerRadius(16)
+        .onAppear {
+            DispatchQueue.main.asyncAfter(deadline: .now() + 0.2) {
+                withAnimation(.easeInOut(duration: 0.6)) {
+                    animate = true
+                }
+            }
+        }
+    }
+}
+
+// MARK: - SMARTER Score History View
+
+struct SMARTERHistoryView: View {
+    let goalId: String
+    let goalTitle: String
+    @StateObject private var viewModel = GoalEnhancementViewModel()
+    @Environment(\.dismiss) private var dismiss
+
+    var body: some View {
+        NavigationStack {
+            ZStack {
+                AppColors.background.ignoresSafeArea()
+
+                if viewModel.smarterHistory.isEmpty {
+                    VStack(spacing: 16) {
+                        Image(systemName: "chart.bar")
+                            .font(.system(size: 48))
+                            .foregroundColor(AppColors.divider)
+                        Text("尚無評分歷史")
+                            .font(.subheadline)
+                            .foregroundColor(AppColors.textSecondary)
+                    }
+                } else {
+                    ScrollView {
+                        VStack(spacing: 16) {
+                            // Trend chart
+                            scoreTrendChart
+
+                            // History list
+                            ForEach(viewModel.smarterHistory.reversed(), id: \.id) { score in
+                                historyCard(score)
+                            }
+                        }
+                        .padding()
+                    }
+                }
+            }
+            .navigationTitle("📊 評分歷史")
+            .navigationBarTitleDisplayMode(.inline)
+            .toolbar {
+                ToolbarItem(placement: .navigationBarTrailing) {
+                    Button("關閉") { dismiss() }
+                }
+            }
+        }
+        .onAppear {
+            viewModel.loadSMARTERScore(goalId: goalId)
+        }
+    }
+
+    private var scoreTrendChart: some View {
+        VStack(alignment: .leading, spacing: 12) {
+            Text("分數趨勢")
+                .font(.headline)
+                .foregroundColor(AppColors.textPrimary)
+
+            HStack(alignment: .bottom, spacing: 8) {
+                ForEach(Array(viewModel.smarterHistory.enumerated()), id: \.(offset, element).1.id) { index, score in
+                    VStack(spacing: 4) {
+                        Text(String(format: "%.1f", score.overallScore))
+                            .font(.caption2)
+                            .fontWeight(.semibold)
+                            .foregroundColor(AppColors.primary)
+
+                        RoundedRectangle(cornerRadius: 4)
+                            .fill(
+                                LinearGradient(
+                                    colors: [AppColors.primary, AppColors.primary.opacity(0.6)],
+                                    startPoint: .top, endPoint: .bottom
+                                )
+                            )
+                            .frame(width: 32, height: max(20, CGFloat(score.overallScore) / 10 * 100))
+
+                        Text("第\(index + 1)次")
+                            .font(.caption2)
+                            .foregroundColor(AppColors.textSecondary)
+                    }
+                }
+            }
+            .frame(maxWidth: .infinity)
+            .padding()
+            .background(AppColors.cardBackground)
+            .cornerRadius(12)
+        }
+    }
+
+    private func historyCard(_ score: SMARTERScore) -> some View {
+        VStack(alignment: .leading, spacing: 8) {
+            HStack {
+                Text(String(format: "%.1f", score.overallScore))
+                    .font(.title3)
+                    .fontWeight(.bold)
+                    .foregroundColor(score.overallScore >= 7 ? AppColors.success : score.overallScore >= 5 ? AppColors.accent : AppColors.error)
+
+                Text("/10")
+                    .font(.caption)
+                    .foregroundColor(AppColors.textSecondary)
+
+                Spacer()
+
+                Text(score.createdAt.formatted(.dateTime.month().day().hour().minute()))
+                    .font(.caption)
+                    .foregroundColor(AppColors.textSecondary)
+            }
+
+            HStack(spacing: 6) {
+                dimensionBadge("S", value: score.specific)
+                dimensionBadge("M", value: score.measurable)
+                dimensionBadge("A", value: score.actionable)
+                dimensionBadge("R", value: score.risky)
+                dimensionBadge("T", value: score.timeKeyed)
+                dimensionBadge("E", value: score.exciting)
+                dimensionBadge("R", value: score.relevant)
+            }
+
+            if let suggestions = score.aiSuggestions, !suggestions.isEmpty {
+                Text(suggestions.first ?? "")
+                    .font(.caption)
+                    .foregroundColor(AppColors.textSecondary)
+                    .lineLimit(2)
+            }
+        }
+        .padding()
+        .background(AppColors.cardBackground)
+        .cornerRadius(12)
+    }
+
+    private func dimensionBadge(_ label: String, value: Int) -> some View {
+        VStack(spacing: 2) {
+            Text(label)
+                .font(.system(size: 9))
+                .fontWeight(.bold)
+                .foregroundColor(.white)
+            Text("\(value)")
+                .font(.system(size: 10))
+                .fontWeight(.semibold)
+                .foregroundColor(.white)
+        }
+        .frame(width: 28, height: 32)
+        .background(value >= 7 ? AppColors.success : value >= 5 ? AppColors.accent : AppColors.error)
+        .cornerRadius(6)
     }
 }

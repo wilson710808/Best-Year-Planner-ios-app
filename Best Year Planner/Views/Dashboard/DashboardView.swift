@@ -155,6 +155,32 @@ struct DashboardView: View {
                     }
                     .padding(.horizontal)
 
+                    // Belief Tracker Entry
+                    NavigationLink(destination: BeliefTrackerView()) {
+                        HStack(spacing: 12) {
+                            Image(systemName: "brain.head.profile")
+                                .foregroundColor(AppColors.accent)
+                                .font(.title3)
+                            VStack(alignment: .leading, spacing: 2) {
+                                Text("信念追蹤")
+                                    .font(.subheadline)
+                                    .fontWeight(.medium)
+                                    .foregroundColor(AppColors.textPrimary)
+                                Text("追蹤限制性信念的轉化進度")
+                                    .font(.caption)
+                                    .foregroundColor(AppColors.textSecondary)
+                            }
+                            Spacer()
+                            Image(systemName: "chevron.right")
+                                .foregroundColor(AppColors.textSecondary)
+                                .font(.caption)
+                        }
+                        .padding()
+                        .background(AppColors.cardBackground)
+                        .cornerRadius(12)
+                    }
+                    .padding(.horizontal)
+
                     // Dimension Progress
                     HStack(spacing: 12) {
                         MiniDimensionProgress(dimension: .career, progress: viewModel.careerProgress)
@@ -162,6 +188,10 @@ struct DashboardView: View {
                         MiniDimensionProgress(dimension: .growth, progress: viewModel.growthProgress)
                     }
                     .padding(.horizontal)
+
+                    // Quick Check-In Section
+                    QuickCheckInSection()
+                        .padding(.horizontal)
 
                     // Quick access
                     VStack(alignment: .leading, spacing: 12) {
@@ -543,5 +573,232 @@ struct ChallengeCompletionCelebrationView: View {
             Spacer()
         }
         .background(AppColors.background.ignoresSafeArea())
+    }
+}
+
+// MARK: - Quick Check-In Section
+
+struct QuickCheckInSection: View {
+    @StateObject private var challengeViewModel = ChallengeViewModel()
+    @State private var completedTasks: Set<String> = []
+    @State private var showCelebration = false
+    @State private var allDone = false
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 12) {
+            HStack {
+                Image(systemName: "checkmark.seal.fill")
+                    .foregroundColor(AppColors.success)
+                Text("今日快速打卡")
+                    .font(.headline)
+                    .foregroundColor(AppColors.textPrimary)
+                Spacer()
+
+                if allDone {
+                    Text("🎉 全部完成！")
+                        .font(.caption)
+                        .fontWeight(.semibold)
+                        .foregroundColor(AppColors.success)
+                } else {
+                    Text("\(completedTasks.count)/\(pendingTasks.count)")
+                        .font(.caption)
+                        .fontWeight(.semibold)
+                        .foregroundColor(AppColors.textSecondary)
+                }
+            }
+
+            if pendingTasks.isEmpty {
+                HStack {
+                    Spacer()
+                    VStack(spacing: 8) {
+                        Image(systemName: "checkmark.circle")
+                            .font(.title2)
+                            .foregroundColor(AppColors.divider)
+                        Text("今天沒有待打卡任務")
+                            .font(.caption)
+                            .foregroundColor(AppColors.textSecondary)
+                    }
+                    Spacer()
+                }
+                .padding(.vertical, 16)
+            } else {
+                // Quick one-tap buttons for each task
+                VStack(spacing: 8) {
+                    ForEach(pendingTasks, id: \.id) { task in
+                        quickCheckInRow(task: task)
+                    }
+                }
+
+                // Batch complete button
+                if pendingTasks.filter({ !completedTasks.contains($0.id) }).count > 1 {
+                    Button(action: batchCheckIn) {
+                        HStack {
+                            Image(systemName: "checkmark.circle.fill")
+                            Text("一鍵全部打卡")
+                        }
+                        .font(.subheadline)
+                        .fontWeight(.semibold)
+                        .foregroundColor(.white)
+                        .frame(maxWidth: .infinity)
+                        .padding(.vertical, 10)
+                        .background(AppColors.success)
+                        .cornerRadius(10)
+                    }
+                }
+            }
+        }
+        .padding()
+        .background(AppColors.cardBackground)
+        .cornerRadius(16)
+        .shadow(color: Color.black.opacity(0.04), radius: 4, x: 0, y: 2)
+        .onAppear {
+            challengeViewModel.loadChallenges()
+        }
+        .overlay {
+            if showCelebration {
+                CheckInCelebrationOverlay()
+                    .transition(.scale.combined(with: .opacity))
+                    .onAppear {
+                        DispatchQueue.main.asyncAfter(deadline: .now() + 1.5) {
+                            withAnimation { showCelebration = false }
+                        }
+                    }
+            }
+        }
+    }
+
+    // MARK: - Pending Tasks
+
+    private var pendingTasks: [QuickCheckInTask] {
+        var tasks: [QuickCheckInTask] = []
+
+        // Add challenge task if available
+        if let challenge = challengeViewModel.currentChallenge,
+           let todayTask = challengeViewModel.todayTask,
+           !todayTask.isCompleted {
+            tasks.append(QuickCheckInTask(
+                id: todayTask.id,
+                title: todayTask.title,
+                subtitle: challenge.phase == .sevenDayLaunch ? "7天啟動" : "21天挑戰",
+                icon: challenge.phase == .sevenDayLaunch ? "bolt.fill" : "flame.fill",
+                color: challenge.phase == .sevenDayLaunch ? AppColors.accent : AppColors.primary
+            ))
+        }
+
+        // Add regular tasks
+        let regularTasks = TaskService.shared.getTodaysTasks()
+        for task in regularTasks {
+            let hasCheckedIn = !CheckInService.shared.getCheckIns(forTaskId: task.id).filter {
+                Calendar.current.isDate($0.date, inSameDayAs: Date())
+            }.isEmpty
+            if !hasCheckedIn {
+                tasks.append(QuickCheckInTask(
+                    id: task.id,
+                    title: task.title,
+                    subtitle: task.priority.displayName,
+                    icon: "checkmark.circle",
+                    color: AppColors.primary
+                ))
+            }
+        }
+
+        return tasks
+    }
+
+    // MARK: - Quick Check-In Row
+
+    private func quickCheckInRow(task: QuickCheckInTask) -> some View {
+        HStack(spacing: 12) {
+            Image(systemName: task.icon)
+                .foregroundColor(task.color)
+                .font(.title3)
+                .frame(width: 24)
+
+            VStack(alignment: .leading, spacing: 2) {
+                Text(task.title)
+                    .font(.subheadline)
+                    .fontWeight(.medium)
+                    .foregroundColor(completedTasks.contains(task.id) ? AppColors.textSecondary : AppColors.textPrimary)
+                    .strikethrough(completedTasks.contains(task.id))
+
+                Text(task.subtitle)
+                    .font(.caption2)
+                    .foregroundColor(AppColors.textSecondary)
+            }
+
+            Spacer()
+
+            if completedTasks.contains(task.id) {
+                Image(systemName: "checkmark.circle.fill")
+                    .font(.title2)
+                    .foregroundColor(AppColors.success)
+            } else {
+                Button(action: { completeTask(task) }) {
+                    Image(systemName: "circle")
+                        .font(.title2)
+                        .foregroundColor(AppColors.primary)
+                }
+            }
+        }
+        .padding(.vertical, 4)
+    }
+
+    // MARK: - Actions
+
+    private func completeTask(_ task: QuickCheckInTask) {
+        let result = CheckInService.shared.checkIn(taskId: task.id, status: .completed)
+        if case .success = result {
+            withAnimation(.spring(response: 0.3)) {
+                completedTasks.insert(task.id)
+            }
+            checkAllDone()
+        }
+    }
+
+    private func batchCheckIn() {
+        let remainingIds = pendingTasks.map { $0.id }.filter { !completedTasks.contains($0) }
+        let results = CheckInService.shared.batchCheckIn(taskIds: remainingIds)
+        for (taskId, result) in results {
+            if case .success = result {
+                completedTasks.insert(taskId)
+            }
+        }
+        checkAllDone()
+    }
+
+    private func checkAllDone() {
+        let allPending = pendingTasks.map { $0.id }
+        if Set(allPending).isSubset(of: completedTasks) {
+            allDone = true
+            showCelebration = true
+        }
+    }
+}
+
+// MARK: - Quick Check-In Task Model
+
+private struct QuickCheckInTask: Identifiable {
+    let id: String
+    let title: String
+    let subtitle: String
+    let icon: String
+    let color: Color
+}
+
+// MARK: - Check-In Celebration Overlay
+
+private struct CheckInCelebrationOverlay: View {
+    var body: some View {
+        VStack(spacing: 12) {
+            Text("🎉")
+                .font(.system(size: 48))
+            Text("全部完成！")
+                .font(.headline)
+                .foregroundColor(AppColors.success)
+        }
+        .padding(24)
+        .background(AppColors.cardBackground)
+        .cornerRadius(16)
+        .shadow(color: .black.opacity(0.15), radius: 12, x: 0, y: 4)
     }
 }

@@ -22,6 +22,7 @@ final class GoalEnhancementViewModel: ObservableObject {
     @Published var smarterScores: [String: SMARTERScore] = [:]
     @Published var currentSMARTER: SMARTERScore?
     @Published var smarterSuggestions: [String] = []
+    @Published var smarterHistory: [SMARTERScore] = []
 
     // 領先/滯後指標
     @Published var goalIndicators: [String: [GoalIndicator]] = [:]
@@ -122,6 +123,7 @@ final class GoalEnhancementViewModel: ObservableObject {
 
     func loadSMARTERScore(goalId: String) {
         currentSMARTER = service.getSMARTERScore(goalId: goalId)
+        smarterHistory = service.getSMARTERScoreHistory(goalId: goalId)
     }
 
     func saveSMARTERScore(goalId: String, goalTitle: String) async {

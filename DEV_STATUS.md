@@ -53,6 +53,7 @@
 | ViewModels ServiceLocator | ✅ | 4個 ViewModel 使用 |
 | Database 表結構 | ✅ | 15+ 表完整 |
 | DEV_STATUS.md | ✅ | 本文件 |
+| 移除 AICoachViewModel 直接引用 | ✅ | commit 4aa4589 |
 
 ### Task B: SMARTER 評分器
 | 項目 | 狀態 | 說明 |

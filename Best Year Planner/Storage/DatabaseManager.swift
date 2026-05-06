@@ -1191,7 +1191,7 @@ final class DatabaseManager {
             sqlite3_finalize(statement)
         }
 
-        let targetVersion: Int32 = 2
+        let targetVersion: Int32 = 3
 
         // Migration v1 → v2: 為 goals/tasks/challenges 添加 user_id 欄位
         if currentVersion < 2 {
@@ -1199,8 +1199,11 @@ final class DatabaseManager {
             setDatabaseVersion(2)
         }
 
-        // 未來遷移在此添加：
-        // if currentVersion < 3 { migrateToV3(); setDatabaseVersion(3) }
+        // Migration v2 → v3: 信念轉化追蹤表
+        if currentVersion < 3 {
+            migrateToV3()
+            setDatabaseVersion(3)
+        }
     }
 
     private func setDatabaseVersion(_ version: Int32) {
@@ -1244,6 +1247,32 @@ final class DatabaseManager {
         }
 
         print("[DatabaseManager] Migrated to v2: added user_id columns")
+    }
+
+    /// V3 遷移：新增 belief_records 表 — 信念轉化追蹤
+    private func migrateToV3() {
+        let createTable = """
+        CREATE TABLE IF NOT EXISTS belief_records (
+            id TEXT PRIMARY KEY,
+            user_id TEXT,
+            limiting_belief TEXT NOT NULL,
+            reframed_belief TEXT NOT NULL,
+            category TEXT DEFAULT 'general',
+            status TEXT DEFAULT 'active',
+            action_taken TEXT,
+            action_date REAL,
+            is_verified INTEGER DEFAULT 0,
+            verified_at REAL,
+            ai_guidance TEXT,
+            created_at REAL NOT NULL
+        );
+        """
+        executeSQL(createTable)
+
+        let createIndex = "CREATE INDEX IF NOT EXISTS idx_belief_records_user ON belief_records(user_id)"
+        executeSQL(createIndex)
+
+        print("[DatabaseManager] Migrated to v3: added belief_records table")
     }
 
     // MARK: - Generic Onboarding Data Storage

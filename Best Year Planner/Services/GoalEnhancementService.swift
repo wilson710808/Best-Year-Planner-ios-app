@@ -168,6 +168,22 @@ final class GoalEnhancementService {
         return smarterScoreFromStatement(stmt)
     }
 
+    func getSMARTERScoreHistory(goalId: String) -> [SMARTERScore] {
+        let sql = "SELECT * FROM smarter_scores WHERE goal_id = ? ORDER BY created_at ASC"
+        var stmt: OpaquePointer?
+        var scores: [SMARTERScore] = []
+        guard sqlite3_prepare_v2(database.db, sql, -1, &stmt, nil) == SQLITE_OK else { return [] }
+        defer { sqlite3_finalize(stmt) }
+        sqlite3_bind_text(stmt, 1, (goalId as NSString).utf8String, -1, nil)
+
+        while sqlite3_step(stmt) == SQLITE_ROW {
+            if let score = smarterScoreFromStatement(stmt) {
+                scores.append(score)
+            }
+        }
+        return scores
+    }
+
     // MARK: - 領先/滯後指標
 
     func saveGoalIndicator(_ indicator: GoalIndicator) -> Bool {
@@ -479,5 +495,147 @@ final class GoalEnhancementService {
         guard let type = GoalIndicatorType(rawValue: typeRaw) else { return nil }
         return GoalIndicator(id: id, goalId: goalId, type: type, title: title, description: desc,
                              targetValue: targetValue, currentValue: currentValue, unit: unit, createdAt: createdAt)
+    }
+
+    // MARK: - 信念轉化記錄
+
+    func saveBeliefRecord(_ record: BeliefRecord) -> Bool {
+        let sql = """
+        INSERT OR REPLACE INTO belief_records (id, user_id, limiting_belief, reframed_belief, category, status, action_taken, action_date, is_verified, verified_at, ai_guidance, created_at)
+        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?);
+        """
+        var stmt: OpaquePointer?
+        guard sqlite3_prepare_v2(database.db, sql, -1, &stmt, nil) == SQLITE_OK else { return false }
+        defer { sqlite3_finalize(stmt) }
+
+        sqlite3_bind_text(stmt, 1, (record.id as NSString).utf8String, -1, nil)
+        if let userId = record.userId {
+            sqlite3_bind_text(stmt, 2, (userId as NSString).utf8String, -1, nil)
+        } else { sqlite3_bind_null(stmt, 2) }
+        sqlite3_bind_text(stmt, 3, (record.limitingBelief as NSString).utf8String, -1, nil)
+        sqlite3_bind_text(stmt, 4, (record.reframedBelief as NSString).utf8String, -1, nil)
+        sqlite3_bind_text(stmt, 5, (record.category.rawValue as NSString).utf8String, -1, nil)
+        sqlite3_bind_text(stmt, 6, (record.status.rawValue as NSString).utf8String, -1, nil)
+
+        if let action = record.actionTaken {
+            sqlite3_bind_text(stmt, 7, (action as NSString).utf8String, -1, nil)
+        } else { sqlite3_bind_null(stmt, 7) }
+
+        if let actionDate = record.actionDate {
+            sqlite3_bind_double(stmt, 8, actionDate.timeIntervalSince1970)
+        } else { sqlite3_bind_null(stmt, 8) }
+
+        sqlite3_bind_int(stmt, 9, record.isVerified ? 1 : 0)
+
+        if let verifiedAt = record.verifiedAt {
+            sqlite3_bind_double(stmt, 10, verifiedAt.timeIntervalSince1970)
+        } else { sqlite3_bind_null(stmt, 10) }
+
+        if let guidance = record.aiGuidance {
+            sqlite3_bind_text(stmt, 11, (guidance as NSString).utf8String, -1, nil)
+        } else { sqlite3_bind_null(stmt, 11) }
+
+        sqlite3_bind_double(stmt, 12, record.createdAt.timeIntervalSince1970)
+
+        return sqlite3_step(stmt) == SQLITE_DONE
+    }
+
+    func getBeliefRecords(userId: String) -> [BeliefRecord] {
+        let sql = "SELECT * FROM belief_records WHERE user_id = ? OR user_id IS NULL ORDER BY created_at DESC"
+        var stmt: OpaquePointer?
+        var records: [BeliefRecord] = []
+        guard sqlite3_prepare_v2(database.db, sql, -1, &stmt, nil) == SQLITE_OK else { return [] }
+        defer { sqlite3_finalize(stmt) }
+        sqlite3_bind_text(stmt, 1, (userId as NSString).utf8String, -1, nil)
+
+        while sqlite3_step(stmt) == SQLITE_ROW {
+            if let record = beliefRecordFromStatement(stmt) {
+                records.append(record)
+            }
+        }
+        return records
+    }
+
+    func updateBeliefStatus(id: String, status: BeliefStatus, actionTaken: String? = nil) -> Bool {
+        var sql = "UPDATE belief_records SET status = ?"
+        if actionTaken != nil { sql += ", action_taken = ?, action_date = ?" }
+        if status == .verified { sql += ", is_verified = 1, verified_at = ?" }
+        sql += " WHERE id = ?"
+
+        var stmt: OpaquePointer?
+        guard sqlite3_prepare_v2(database.db, sql, -1, &stmt, nil) == SQLITE_OK else { return false }
+        defer { sqlite3_finalize(stmt) }
+
+        var paramIndex: Int32 = 1
+        sqlite3_bind_text(stmt, paramIndex, (status.rawValue as NSString).utf8String, -1, nil)
+        paramIndex += 1
+
+        if let action = actionTaken {
+            sqlite3_bind_text(stmt, paramIndex, (action as NSString).utf8String, -1, nil)
+            paramIndex += 1
+            sqlite3_bind_double(stmt, paramIndex, Date().timeIntervalSince1970)
+            paramIndex += 1
+        }
+
+        if status == .verified {
+            sqlite3_bind_double(stmt, paramIndex, Date().timeIntervalSince1970)
+            paramIndex += 1
+        }
+
+        sqlite3_bind_text(stmt, paramIndex, (id as NSString).utf8String, -1, nil)
+
+        return sqlite3_step(stmt) == SQLITE_DONE
+    }
+
+    func deleteBeliefRecord(id: String) -> Bool {
+        let sql = "DELETE FROM belief_records WHERE id = ?"
+        var stmt: OpaquePointer?
+        guard sqlite3_prepare_v2(database.db, sql, -1, &stmt, nil) == SQLITE_OK else { return false }
+        defer { sqlite3_finalize(stmt) }
+        sqlite3_bind_text(stmt, 1, (id as NSString).utf8String, -1, nil)
+        return sqlite3_step(stmt) == SQLITE_DONE
+    }
+
+    func getBeliefStats(userId: String) -> (total: Int, verified: Int, active: Int, topCategory: BeliefCategory) {
+        let records = getBeliefRecords(userId: userId)
+        let verified = records.filter { $0.isVerified }.count
+        let active = records.filter { $0.status == .active }.count
+
+        // Find most common category
+        var categoryCounts: [BeliefCategory: Int] = [:]
+        for record in records {
+            categoryCounts[record.category, default: 0] += 1
+        }
+        let topCategory = categoryCounts.max(by: { $0.value < $1.value })?.key ?? .general
+
+        return (total: records.count, verified: verified, active: active, topCategory: topCategory)
+    }
+
+    private func beliefRecordFromStatement(_ stmt: OpaquePointer?) -> BeliefRecord? {
+        guard let stmt = stmt else { return nil }
+        let id = String(cString: sqlite3_column_text(stmt, 0))
+        let userId: String? = sqlite3_column_text(stmt, 1).map { String(cString: $0) }
+        let limitingBelief = String(cString: sqlite3_column_text(stmt, 2))
+        let reframedBelief = String(cString: sqlite3_column_text(stmt, 3))
+        let categoryRaw = String(cString: sqlite3_column_text(stmt, 4))
+        let statusRaw = String(cString: sqlite3_column_text(stmt, 5))
+        let actionTaken: String? = sqlite3_column_text(stmt, 6).map { String(cString: $0) }
+        let actionDate: Date? = sqlite3_column_type(stmt, 7) != SQLITE_NULL ? Date(timeIntervalSince1970: sqlite3_column_double(stmt, 7)) : nil
+        let isVerified = sqlite3_column_int(stmt, 8) == 1
+        let verifiedAt: Date? = sqlite3_column_type(stmt, 9) != SQLITE_NULL ? Date(timeIntervalSince1970: sqlite3_column_double(stmt, 9)) : nil
+        let aiGuidance: String? = sqlite3_column_text(stmt, 10).map { String(cString: $0) }
+        let createdAt = Date(timeIntervalSince1970: sqlite3_column_double(stmt, 11))
+
+        guard let category = BeliefCategory(rawValue: categoryRaw),
+              let status = BeliefStatus(rawValue: statusRaw) else { return nil }
+
+        return BeliefRecord(
+            id: id, userId: userId,
+            limitingBelief: limitingBelief, reframedBelief: reframedBelief,
+            category: category, status: status,
+            actionTaken: actionTaken, actionDate: actionDate,
+            isVerified: isVerified, verifiedAt: verifiedAt,
+            aiGuidance: aiGuidance, createdAt: createdAt
+        )
     }
 }
