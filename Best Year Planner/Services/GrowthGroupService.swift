@@ -404,4 +404,56 @@ final class GrowthGroupService {
         else if progress >= 1.0 { return "🎊 揪團圓滿結束！" }
         else { return "第\(dayNumber)天 — 穩步前進中" }
     }
+
+    // MARK: - 夥伴掉鏈子功能
+    
+    /// 隨機讓某位 AI 夥伴「掉鏈子」— 增加真實感
+    /// 機率：約 20% 的日常動態會包含夥伴掉鏈子
+    func generateBuddyMissedDayActivity(partner: AIPartner, group: GrowthGroup) async -> GroupActivity? {
+        let shouldMiss = Int.random(in: 0..<5) == 0 // 20% 機率
+        guard shouldMiss else { return nil }
+        
+        let missedReasons = [
+            "我今天工作太忙了，完全忘了打卡 😅",
+            "坦白說，我今天有點想偷懶⋯⋯但明天我會加倍努力！",
+            "今天心情不太好，沒什麼動力。不過看到你還在堅持，我也要跟上！",
+            "我昨晚熬夜了，今天實在起不來⋯⋯",
+            "說來慚愧，我今天去追劇了 😅 但我明天一定會回來的！",
+            "我今天忘了設定提醒，結果完全忘了打卡",
+        ]
+        let reason = missedReasons.randomElement() ?? "我今天沒有完成打卡"
+        
+        let encouragingMessages = [
+            "不過你還在堅持對吧？這才是最重要的！",
+            "你要繼續加油啊，我明天一定跟上！",
+            "看到你還在打卡，我真的很佩服！",
+            "你可別跟著我偷懶啊 😤",
+        ]
+        let encourage = encouragingMessages.randomElement() ?? ""
+        
+        let content = "\(reason)
+\(encourage)"
+        
+        return GroupActivity(
+            id: UUID().uuidString,
+            groupId: group.id,
+            partnerId: partner.id,
+            authorName: partner.name,
+            authorEmoji: "😅",
+            activityType: .reflection,
+            content: content,
+            createdAt: Date()
+        )
+    }
+    
+    /// 生成夥伴的日常動態（含掉鏈子判斷）
+    private func generateDailyActivityWithPossibleMiss(partner: AIPartner, group: GrowthGroup) async -> GroupActivity {
+        // 先檢查是否掉鏈子
+        if let missedActivity = await generateBuddyMissedDayActivity(partner: partner, group: group) {
+            return missedActivity
+        }
+        // 否則正常生成
+        return await generateDailyActivity(partner: partner, group: group)
+    }
+
 }

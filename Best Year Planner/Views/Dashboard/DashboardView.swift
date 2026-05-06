@@ -224,7 +224,10 @@ struct DashboardView: View {
                         }
 
                     // Quick Check-In Section
-                    QuickCheckInSection()
+                    // MIT — 最重要三件事
+\                        MITSection(navigateToFocusMode: $navigateToFocusMode)
+\                        
+\                        QuickCheckInSection()
                         .padding(.horizontal)
 
                     // Quick access
@@ -855,5 +858,93 @@ private struct CheckInCelebrationOverlay: View {
         .background(AppColors.cardBackground)
         .cornerRadius(16)
         .shadow(color: .black.opacity(0.15), radius: 12, x: 0, y: 4)
+    }
+}
+
+// MARK: - MIT 最重要三件事
+struct MITSection: View {
+    @Binding var navigateToFocusMode: Bool
+    @State private var mitTasks: [MITTask] = []
+    
+    var body: some View {
+        VStack(alignment: .leading, spacing: 12) {
+            HStack {
+                Image(systemName: "3.circle.fill")
+                    .foregroundColor(AppColors.accent)
+                Text("今天最重要三件事")
+                    .font(.subheadline)
+                    .fontWeight(.bold)
+                    .foregroundColor(AppColors.textPrimary)
+                Spacer()
+                Button(action: { navigateToFocusMode = true }) {
+                    HStack(spacing: 4) {
+                        Image(systemName: "focus")
+                            .font(.caption2)
+                        Text("專注模式")
+                            .font(.caption2)
+                    }
+                    .foregroundColor(AppColors.primary)
+                }
+            }
+            
+            if mitTasks.isEmpty {
+                // 空狀態
+                HStack {
+                    Spacer()
+                    VStack(spacing: 8) {
+                        Image(systemName: "list.bullet.clipboard")
+                            .font(.title2)
+                            .foregroundColor(AppColors.textSecondary)
+                        Text("還沒設定今天最重要的三件事")
+                            .font(.caption)
+                            .foregroundColor(AppColors.textSecondary)
+                        Button("設定 MIT") {
+                            navigateToFocusMode = true
+                        }
+                        .font(.caption)
+                        .foregroundColor(AppColors.primary)
+                    }
+                    Spacer()
+                }
+                .padding()
+                .background(AppColors.cardBackground)
+                .cornerRadius(12)
+            } else {
+                ForEach(mitTasks) { task in
+                    HStack(spacing: 12) {
+                        Circle()
+                            .fill(task.isCompleted ? AppColors.success : AppColors.divider)
+                            .frame(width: 24, height: 24)
+                            .overlay(
+                                Image(systemName: task.isCompleted ? "checkmark" : "\(task.order)")
+                                    .font(.caption2)
+                                    .foregroundColor(task.isCompleted ? .white : AppColors.textSecondary)
+                            )
+                        Text(task.title)
+                            .font(.subheadline)
+                            .foregroundColor(task.isCompleted ? AppColors.textSecondary : AppColors.textPrimary)
+                            .strikethrough(task.isCompleted)
+                        Spacer()
+                    }
+                    .padding(.vertical, 8)
+                }
+            }
+        }
+        .padding()
+        .background(AppColors.cardBackground)
+        .cornerRadius(12)
+        .padding(.horizontal)
+        .onAppear {
+            loadMITTasks()
+        }
+    }
+    
+    private func loadMITTasks() {
+        let userId = UserDefaultsManager.shared.currentUserId ?? ""
+        let key = "mitTasks_\(userId)_\(Date().startOfDay.timeIntervalSince1970)"
+        if let data = UserDefaults.standard.data(forKey: key),
+           let decoded = try? JSONDecoder().decode([MITTask].self, from: data) {
+            mitTasks = decoded
+        }
     }
 }

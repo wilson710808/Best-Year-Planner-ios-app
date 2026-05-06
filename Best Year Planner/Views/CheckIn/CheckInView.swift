@@ -4,6 +4,10 @@ struct CheckInView: View {
     @StateObject private var viewModel = CheckInViewModel()
     @StateObject private var challengeViewModel = ChallengeViewModel()
     @State private var showCheckInSheet = false
+    @State private var showMakeUpSheet = false
+    @State private var makeUpTaskId: String = ""
+    @State private var makeUpReason = ""
+    @State private var makeUpReflection = 
 
     var body: some View {
         NavigationStack {
@@ -107,7 +111,45 @@ struct CheckInView: View {
                 }
             }
             .navigationTitle(StringConstants.CheckIn.title)
-            .sheet(isPresented: $showCheckInSheet) {
+            .sheet(isPresented: $showMakeUpSheet) {
+            NavigationStack {
+                ZStack {
+                    AppColors.background.ignoresSafeArea()
+                    Form {
+                        Section("為什麼錯過了？") {
+                            TextField("原因（如：太忙、忘記、狀態不好）", text: $makeUpReason)
+                        }
+                        Section("你的反思") {
+                            TextField("下次怎麼避免？", text: $makeUpReflection, axis: .vertical)
+                                .lineLimit(3...6)
+                        }
+                    }
+                    .navigationTitle("補卡")
+                    .navigationBarTitleDisplayMode(.inline)
+                    .toolbar {
+                        ToolbarItem(placement: .cancellationAction) {
+                            Button("取消") { showMakeUpSheet = false }
+                        }
+                        ToolbarItem(placement: .confirmationAction) {
+                            Button("確認補卡") {
+                                let _ = CheckInService.shared.makeUpCheckIn(
+                                    taskId: makeUpTaskId,
+                                    originalDate: Date().addingTimeInterval(-86400),
+                                    reason: makeUpReason,
+                                    reflection: makeUpReflection
+                                )
+                                showMakeUpSheet = false
+                                makeUpReason = ""
+                                makeUpReflection = ""
+                                viewModel.loadTodayCheckIns()
+                            }
+                            .disabled(makeUpReason.isEmpty)
+                        }
+                    }
+                }
+            }
+        }
+        .sheet(isPresented: $showCheckInSheet) {
                 if let task = viewModel.selectedTask {
                     CheckInSheetView(viewModel: viewModel, task: task)
                 }
