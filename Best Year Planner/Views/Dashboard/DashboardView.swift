@@ -4,6 +4,11 @@ struct DashboardView: View {
     @StateObject private var viewModel = DashboardViewModel()
     @StateObject private var challengeViewModel = ChallengeViewModel()
     @State private var showBuddyGroup = false
+    @State private var navigateToMilestone = false
+    @State private var navigateToHeatmap = false
+    @State private var navigateToEnergy = false
+    @State private var navigateToCalibration = false
+    @State private var navigateToFocusMode = false
     @EnvironmentObject private var appState: AppState
 
     var body: some View {
@@ -242,10 +247,10 @@ struct DashboardView: View {
                             QuickActionCard(icon: "person.3.fill", title: "揪團成長", color: AppColors.secondary) {
                                 showBuddyGroup = true
                             }
-                QuickActionCard(icon: "flag.fill", title: "里程碑", color: Color.purple) { /* Navigate to MilestoneWallView */ }
-                QuickActionCard(icon: "chart.bar.doc.horizontal", title: "熱力圖", color: AppColors.success) { /* Navigate to HabitHeatmapView */ }
-                QuickActionCard(icon: "bolt.heart.fill", title: "能量曲線", color: Color.orange) { /* Navigate to EnergyCurveView */ }
-                QuickActionCard(icon: "calendar.badge.checkmark", title: "季度校正", color: AppColors.primary) { /* Navigate to PeriodCalibrationView */ }
+                QuickActionCard(icon: "flag.fill", title: "里程碑", color: Color.purple) { navigateToMilestone = true }
+                QuickActionCard(icon: "chart.bar.doc.horizontal", title: "熱力圖", color: AppColors.success) { navigateToHeatmap = true }
+                QuickActionCard(icon: "bolt.heart.fill", title: "能量曲線", color: Color.orange) { navigateToEnergy = true }
+                QuickActionCard(icon: "calendar.badge.checkmark", title: "季度校正", color: AppColors.primary) { navigateToCalibration = true }
                         }
                         .padding(.horizontal)
                     }
@@ -300,7 +305,12 @@ struct DashboardView: View {
             .sheet(isPresented: $challengeViewModel.showingSubscription) {
                 SubscriptionView()
             }
-            .sheet(isPresented: $challengeViewModel.showingCompletionCelebration) {
+            .navigationDestination(isPresented: $navigateToMilestone) { MilestoneWallView() }
+        .navigationDestination(isPresented: $navigateToHeatmap) { HabitHeatmapView() }
+        .navigationDestination(isPresented: $navigateToEnergy) { EnergyCurveView() }
+        .navigationDestination(isPresented: $navigateToCalibration) { PeriodCalibrationView() }
+        .navigationDestination(isPresented: $navigateToFocusMode) { FocusModeView() }
+        .sheet(isPresented: $challengeViewModel.showingCompletionCelebration) {
                 ChallengeCompletionCelebrationView(challengeViewModel: challengeViewModel)
             }
         }
