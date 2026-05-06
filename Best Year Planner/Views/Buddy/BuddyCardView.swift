@@ -102,6 +102,21 @@ struct BuddyCardView: View {
                         .foregroundColor(AppColors.textSecondary)
                 }
             }
+            
+            // 掉鏈子提示（僅對 active 狀態顯示）
+            if (buddy.status == .inProgress || buddy.status == .justStarted) && buddy.isCurrentlySlacking {
+                HStack(spacing: 6) {
+                    Image(systemName: "zzz")
+                        .font(.caption)
+                    Text(buddy.slackingDaysText.isEmpty ? "正在掉鏈子..." : buddy.slackingDaysText)
+                        .font(.caption)
+                }
+                .foregroundColor(.orange)
+                .padding(.horizontal, 8)
+                .padding(.vertical, 4)
+                .background(Color.orange.opacity(0.15))
+                .cornerRadius(6)
+            }
         }
         .padding()
         .background(Color.white)

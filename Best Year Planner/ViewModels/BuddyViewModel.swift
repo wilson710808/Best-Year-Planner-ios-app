@@ -118,6 +118,36 @@ final class BuddyViewModel: ObservableObject {
         loadGroup()
     }
     
+    // MARK: - 掉鏈子系統
+    
+    /// 執行每日掉鏈子模擬
+    func simulateDailySlacking() {
+        buddyService.simulateDailySlacking()
+        loadGroup()
+    }
+    
+    /// 為掉鏈子的夥伴加油
+    @Published var cheerMessage: String?
+    @Published var showCheerMessage: Bool = false
+    
+    func cheerForBuddy(_ buddy: GrowthBuddy) {
+        if let message = buddyService.cheerForBuddy(buddy.id) {
+            cheerMessage = message
+            showCheerMessage = true
+            loadGroup()
+        }
+    }
+    
+    /// 獲取正在掉鏈子的夥伴
+    var slackingBuddies: [GrowthBuddy] {
+        return buddyService.getSlackingBuddies()
+    }
+    
+    /// 獲取掉鏈子統計
+    var slackingStats: (totalMissed: Int, slackingCount: Int, mostMissed: GrowthBuddy?) {
+        return buddyService.getSlackingStats()
+    }
+    
     // MARK: - Statistics
     
     /// 獲取群組統計

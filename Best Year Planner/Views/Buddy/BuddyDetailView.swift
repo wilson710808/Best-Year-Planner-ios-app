@@ -48,6 +48,11 @@ struct BuddyDetailView: View {
                         inspirationSection(message)
                     }
                     
+                    // 掉鏈子狀態顯示（進行中）
+                    if buddy.status == .inProgress || buddy.status == .justStarted {
+                        slackingSection
+                    }
+                    
                     // 互動按鈕
                     actionButtons
                     
@@ -222,6 +227,125 @@ struct BuddyDetailView: View {
         }
     }
     
+    // MARK: - 掉鏈子區塊
+    
+    private var slackingSection: some View {
+        VStack(alignment: .leading, spacing: 16) {
+            HStack {
+                Image(systemName: buddy.isCurrentlySlacking ? "exclamationmark.triangle.fill" : "figure.walk")
+                    .foregroundColor(buddy.isCurrentlySlacking ? .orange : .green)
+                Text("打卡紀錄")
+                    .font(.headline)
+                    .foregroundColor(AppColors.textPrimary)
+            }
+            
+            // 漏打卡統計
+            HStack(spacing: 16) {
+                StatCard(
+                    icon: "xmark.circle.fill",
+                    iconColor: .red,
+                    value: "\(buddy.missedDays)",
+                    label: buddy.missedDaysText
+                )
+                
+                StatCard(
+                    icon: "percent",
+                    iconColor: .blue,
+                    value: "\(Int(buddy.missProbability * 100))%",
+                    label: "漏卡機率"
+                )
+            }
+            
+            // 掉鏈子狀態提示
+            if buddy.isCurrentlySlacking {
+                HStack(spacing: 12) {
+                    Image(systemName: "zzz")
+                        .font(.title2)
+                        .foregroundColor(.orange)
+                    
+                    VStack(alignment: .leading, spacing: 4) {
+                        Text("\(buddy.name) 正在掉鏈子... 😴")
+                            .font(.subheadline)
+                            .fontWeight(.medium)
+                            .foregroundColor(AppColors.textPrimary)
+                        
+                        if !buddy.slackingDaysText.isEmpty {
+                            Text(buddy.slackingDaysText)
+                                .font(.caption)
+                                .foregroundColor(.orange)
+                        }
+                        
+                        Text(slackingEncouragement)
+                            .font(.caption)
+                            .foregroundColor(AppColors.textSecondary)
+                    }
+                }
+                .padding()
+                .background(
+                    LinearGradient(
+                        colors: [Color.orange.opacity(0.15), Color.yellow.opacity(0.1)],
+                        startPoint: .leading,
+                        endPoint: .trailing
+                    )
+                )
+                .cornerRadius(12)
+            } else if buddy.missedDays > 0 {
+                HStack(spacing: 12) {
+                    Image(systemName: "checkmark.circle.fill")
+                        .font(.title2)
+                        .foregroundColor(.green)
+                    
+                    VStack(alignment: .leading, spacing: 4) {
+                        Text("\(buddy.name) 最近有按時打卡 ✅")
+                            .font(.subheadline)
+                            .fontWeight(.medium)
+                            .foregroundColor(AppColors.textPrimary)
+                        
+                        Text("累計漏打卡 \(buddy.missedDays) 天，但正在努力坚持！")
+                            .font(.caption)
+                            .foregroundColor(AppColors.textSecondary)
+                    }
+                }
+                .padding()
+                .background(Color.green.opacity(0.1))
+                .cornerRadius(12)
+            } else {
+                HStack(spacing: 12) {
+                    Image(systemName: "star.fill")
+                        .font(.title2)
+                        .foregroundColor(.yellow)
+                    
+                    VStack(alignment: .leading, spacing: 4) {
+                        Text("\(buddy.name) 表現優異！⭐")
+                            .font(.subheadline)
+                            .fontWeight(.medium)
+                            .foregroundColor(AppColors.textPrimary)
+                        
+                        Text("目前零漏打卡，繼續保持！")
+                            .font(.caption)
+                            .foregroundColor(AppColors.textSecondary)
+                    }
+                }
+                .padding()
+                .background(Color.yellow.opacity(0.1))
+                .cornerRadius(12)
+            }
+        }
+    }
+    
+    private var slackingEncouragement: String {
+        let days = buddy.slackingDaysText
+        if days.contains("1天") {
+            return "昨天没打卡，今天给 ta 加加油吧！"
+        } else if days.contains("2天") {
+            return "两天没动了，ta 需要你的鼓励！"
+        } else if days.contains("3") || days.contains("4") || days.contains("5") {
+            return "快要放弃了，快去帮 ta 打气！"
+        } else {
+            return "ta 已经很久没打卡了，需要你的支持！"
+        }
+    }
+    
     private var actionButtons: some View {
         VStack(spacing: 12) {
             if buddy.status == .notStarted {
@@ -249,16 +373,31 @@ struct BuddyDetailView: View {
                         .cornerRadius(12)
                 }
             } else {
-                Button {
-                    // 為夥伴加油
-                } label: {
-                    Label("為他加油", systemImage: "heart.fill")
-                        .font(.headline)
-                        .foregroundColor(.white)
-                        .frame(maxWidth: .infinity)
-                        .padding()
-                        .background(AppColors.accent)
-                        .cornerRadius(12)
+                // 進行中或剛開始
+                if buddy.isCurrentlySlacking {
+                    Button {
+                        // 為掉鏈子的夥伴加油（已在 ViewModel 中處理）
+                    } label: {
+                        Label("鼓勵 \(buddy.name)", systemImage: "heart.fill")
+                            .font(.headline)
+                            .foregroundColor(.white)
+                            .frame(maxWidth: .infinity)
+                            .padding()
+                            .background(Color.orange)
+                            .cornerRadius(12)
+                    }
+                } else {
+                    Button {
+                        // 為夥伴加油
+                    } label: {
+                        Label("為他加油", systemImage: "heart.fill")
+                            .font(.headline)
+                            .foregroundColor(.white)
+                            .frame(maxWidth: .infinity)
+                            .padding()
+                            .background(AppColors.accent)
+                            .cornerRadius(12)
+                    }
                 }
             }
         }
