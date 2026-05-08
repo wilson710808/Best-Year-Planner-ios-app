@@ -1,6 +1,6 @@
 import SwiftUI
 
-/// 信念審計 Sheet — 反思日引導用戶識別並轉化限制性信念
+/// 信念審計 Sheet — 勾選10條常見信念 + AI即時生成轉化視角
 struct BeliefAuditSheetView: View {
     @Environment(\.dismiss) private var dismiss
     @State private var limitingBeliefs: [String] = ["", "", ""]
@@ -8,6 +8,9 @@ struct BeliefAuditSheetView: View {
     @State private var currentStep = 0
     @State private var aiGuidance: String = ""
     @State private var isLoading = false
+    // 勾選常見信念
+    @State private var commonBeliefSelections: [Bool] = Array(repeating: false, count: 10)
+    @State private var selectedCommonBeliefs: [String] = []
 
     var body: some View {
         NavigationStack {
@@ -17,9 +20,12 @@ struct BeliefAuditSheetView: View {
                 ScrollView {
                     VStack(spacing: 24) {
                         if currentStep == 0 {
-                            // Step 1: 識別限制性信念
-                            beliefIdentificationStep
+                            // Step 0: 勾選常見限制性信念
+                            commonBeliefChecklistStep
                         } else if currentStep == 1 {
+                            // Step 1: 識別限制性信念（自由填寫）
+                            beliefIdentificationStep
+                        } else if currentStep == 2 {
                             // Step 2: 反轉信念
                             beliefReframeStep
                         } else {
@@ -39,13 +45,81 @@ struct BeliefAuditSheetView: View {
                     }
                 }
                 ToolbarItem(placement: .navigationBarTrailing) {
-                    if currentStep < 2 {
-                        Button("下一步") { currentStep += 1 }
-                            .disabled(currentStep == 0 && limitingBeliefs.allSatisfy { $0.isEmpty })
+                    if currentStep < 3 {
+                        Button("下一步") {
+                            if currentStep == 0 {
+                                // 將勾選的常見信念帶入
+                                selectedCommonBeliefs = commonLimitingBeliefs.enumerated()
+                                    .filter { commonBeliefSelections[$0.offset] }
+                                    .map { $0.element }
+                                for (i, belief) in selectedCommonBeliefs.prefix(3).enumerated() {
+                                    limitingBeliefs[i] = belief
+                                }
+                            }
+                            currentStep += 1
+                        }
+                        .disabled(currentStep == 0 && commonBeliefSelections.allSatisfy { !$0 } && limitingBeliefs.allSatisfy { $0.isEmpty })
                     } else {
                         Button("完成") { dismiss() }
                     }
                 }
+            }
+        }
+    }
+
+    // MARK: - Step 0: 勾選常見限制性信念
+
+    private var commonBeliefChecklistStep: some View {
+        VStack(alignment: .leading, spacing: 16) {
+            Text("🧠 勾選你認同的限制性信念")
+                .font(.headline)
+                .foregroundColor(AppColors.textPrimary)
+
+            Text("以下10條是最常見的限制性信念，勾選那些你也有的想法。我們會幫你逐一轉化！")
+                .font(.subheadline)
+                .foregroundColor(AppColors.textSecondary)
+
+            VStack(spacing: 8) {
+                ForEach(0..<commonLimitingBeliefs.count, id: \.self) { index in
+                    Button(action: {
+                        commonBeliefSelections[index].toggle()
+                    }) {
+                        HStack(spacing: 12) {
+                            Image(systemName: commonBeliefSelections[index] ? "checkmark.square.fill" : "square")
+                                .font(.title3)
+                                .foregroundColor(commonBeliefSelections[index] ? AppColors.primary : AppColors.divider)
+
+                            Text(commonLimitingBeliefs[index])
+                                .font(.subheadline)
+                                .foregroundColor(AppColors.textPrimary)
+                                .multilineTextAlignment(.leading)
+                                
+                            Spacer()
+                        }
+                        .padding(.vertical, 8)
+                        .padding(.horizontal, 12)
+                        .background(commonBeliefSelections[index] ? AppColors.primary.opacity(0.05) : Color.clear)
+                        .cornerRadius(10)
+                    }
+                    .buttonStyle(.plain)
+                }
+            }
+            
+            HStack {
+                Text("已勾選 \(commonBeliefSelections.filter { $0 }.count)/10")
+                    .font(.caption)
+                    .foregroundColor(AppColors.textSecondary)
+                Spacer()
+                Button("全選") {
+                    commonBeliefSelections = Array(repeating: true, count: 10)
+                }
+                .font(.caption)
+                .foregroundColor(AppColors.primary)
+                Button("全取消") {
+                    commonBeliefSelections = Array(repeating: false, count: 10)
+                }
+                .font(.caption)
+                .foregroundColor(AppColors.textSecondary)
             }
         }
     }

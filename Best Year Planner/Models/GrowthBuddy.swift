@@ -9,10 +9,11 @@ enum BuddyStatus: String, Codable {
 }
 
 // MARK: - 成長夥伴
-struct GrowthBuddy: Codable, Identifiable, Equatable {
+struct GrowthBuddy: Codable, Identifiable, Equatable, Hashable {
     var id: String
     var name: String
     var avatar: String          // SF Symbol 名稱
+    var role: BuddyRole         // 夥伴角色（同行者/過來人/新手/教練）
     var status: BuddyStatus
     var challengeDay: Int       // 當前任務天數
     var totalDays: Int          // 任務總天數
@@ -32,6 +33,7 @@ struct GrowthBuddy: Codable, Identifiable, Equatable {
         id: String = UUID().uuidString,
         name: String,
         avatar: String = "person.circle.fill",
+        role: BuddyRole = .companion,
         status: BuddyStatus,
         challengeDay: Int = 1,
         totalDays: Int = 21,
@@ -48,6 +50,7 @@ struct GrowthBuddy: Codable, Identifiable, Equatable {
         self.id = id
         self.name = name
         self.avatar = avatar
+        self.role = role
         self.status = status
         self.challengeDay = challengeDay
         self.totalDays = totalDays
@@ -135,14 +138,29 @@ struct BuddyGroup: Codable, Identifiable {
         buddies.filter { $0.status == status }
     }
     
-    // 獲取已完成可以分享經驗的夥伴
+    // 獲取已完成可以分享經驗的夥伴（過來人）
     var experiencedBuddy: GrowthBuddy? {
-        buddies.first { $0.status == .completed && $0.sharedExperience != nil }
+        buddies.first { $0.role == .veteran && $0.status == .completed && $0.sharedExperience != nil }
     }
     
-    // 獲取待影響的夥伴
+    // 獲取待影響的夥伴（新手）
     var pendingBuddy: GrowthBuddy? {
-        buddies.first { $0.status == .notStarted }
+        buddies.first { $0.role == .beginner && $0.status == .notStarted }
+    }
+    
+    // 獲取教練夥伴
+    var coachBuddy: GrowthBuddy? {
+        buddies.first { $0.role == .coach }
+    }
+    
+    // 獲取同行者
+    var companionBuddies: [GrowthBuddy] {
+        buddies.filter { $0.role == .companion }
+    }
+    
+    // 獲取特定角色的夥伴
+    func buddies(withRole role: BuddyRole) -> [GrowthBuddy] {
+        buddies.filter { $0.role == role }
     }
     
     // 更新夥伴狀態
@@ -169,52 +187,69 @@ struct BuddyConfiguration {
         "moon.circle.fill"
     ]
     
-    // 生成預設夥伴群組
+    // 生成預設夥伴群組 — 基於 4 種角色
     static func createDefaultGroup(userId: String, challengeDay: Int = 1) -> BuddyGroup {
         var buddies: [GrowthBuddy] = []
         
-        // 2位新開始的夥伴（各自有不同的掉鏈子機率）
-        let missProbs = [0.15, 0.25]  // 15% 和 25% 的漏打卡機率
+        // 🧑‍💼 同行者 ×2 — 和你同時起步
+        let companionMissProbs = [0.15, 0.25]
         for i in 0..<2 {
             let buddy = GrowthBuddy(
                 name: buddyNames[i],
                 avatar: buddyAvatars[i],
+                role: .companion,
                 status: .justStarted,
                 challengeDay: challengeDay,
                 streak: challengeDay > 0 ? 1 : 0,
                 lastActiveDate: Date(),
-                missProbability: missProbs[i]
+                missProbability: companionMissProbs[i]
             )
             buddies.append(buddy)
         }
         
-        // 1位已完成並分享經驗（從不漏卡）
-        let experienceBuddy = GrowthBuddy(
+        // ⭐ 過來人 ×1 — 已完成相同任務，分享經驗
+        let veteranBuddy = GrowthBuddy(
             name: buddyNames[2],
             avatar: buddyAvatars[2],
+            role: .veteran,
             status: .completed,
             challengeDay: 21,
             totalDays: 21,
             streak: 21,
             lastActiveDate: Date().addingTimeInterval(-86400),
-            sharedExperience: "坚持21天的关键是把大目标拆成小任务，每天完成一点点就够！",
-            inspirationalMessage: "你也可以做到的！",
+            sharedExperience: "堅持21天的關鍵是把大目標拆成小任務，每天完成一點點就夠！第7天和第14天是最容易放棄的時候，撐過去就贏了。",
+            inspirationalMessage: "你也可以做到的！我當時也覺得很難。",
             missProbability: 0.0  // 完成者不會漏卡
         )
-        buddies.append(experienceBuddy)
+        buddies.append(veteranBuddy)
         
-        // 1位尚未開始的夥伴（較高漏卡機率，消極型）
-        let pendingBuddy = GrowthBuddy(
+        // 🌱 新手 ×1 — 被你影響而開始
+        let beginnerBuddy = GrowthBuddy(
             name: buddyNames[3],
             avatar: buddyAvatars[3],
+            role: .beginner,
             status: .notStarted,
             challengeDay: 0,
             streak: 0,
             lastActiveDate: Date().addingTimeInterval(-86400 * 2),
-            inspirationalMessage: "看到你这么努力，我也想试试看！",
+            inspirationalMessage: "看到你這麼努力，我也想試試看！",
             missProbability: 0.35  // 消極型，容易放棄
         )
-        buddies.append(pendingBuddy)
+        buddies.append(beginnerBuddy)
+        
+        // 🧘 教練 ×1 — 可選，適時引導
+        let coachBuddy = GrowthBuddy(
+            name: buddyNames[4],
+            avatar: buddyAvatars[4],
+            role: .coach,
+            status: .inProgress,
+            challengeDay: challengeDay,
+            totalDays: 21,
+            streak: challengeDay,
+            lastActiveDate: Date(),
+            missProbability: 0.0  // 教練不會漏卡
+        )
+        buddies.append(coachBuddy)
         
         return BuddyGroup(userId: userId, buddies: buddies)
     }

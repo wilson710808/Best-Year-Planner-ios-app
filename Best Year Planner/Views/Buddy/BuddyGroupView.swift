@@ -3,6 +3,8 @@ import SwiftUI
 struct BuddyGroupView: View {
     @StateObject private var viewModel = BuddyViewModel()
     @EnvironmentObject var challengeViewModel: ChallengeViewModel
+    @State private var showFeed = false
+    @State private var showChatPartner: GrowthBuddy?
     
     var body: some View {
         NavigationStack {
@@ -10,6 +12,9 @@ struct BuddyGroupView: View {
                 VStack(spacing: 20) {
                     // 群組概覽
                     groupOverview
+                    
+                    // 動態消息入口
+                    feedEntryCard
                     
                     // 影響力進度（針對待開始夥伴）
                     if viewModel.pendingBuddy != nil {
@@ -26,11 +31,25 @@ struct BuddyGroupView: View {
             .background(AppColors.background.ignoresSafeArea())
             .navigationTitle("揪團成長")
             .navigationBarTitleDisplayMode(.large)
+            .toolbar {
+                ToolbarItem(placement: .navigationBarTrailing) {
+                    Button(action: { showFeed = true }) {
+                        Image(systemName: "dot.radiowaves.left.and.right")
+                            .foregroundColor(AppColors.primary)
+                    }
+                }
+            }
             .refreshable {
                 viewModel.refreshBuddies()
             }
             .onAppear {
                 viewModel.loadGroup()
+            }
+            .sheet(isPresented: $showFeed) {
+                BuddyFeedView()
+            }
+            .sheet(item: $showChatPartner) { buddy in
+                AIPartnerView(partnerName: buddy.name, buddyRole: buddy.role)
             }
         }
     }
@@ -201,6 +220,43 @@ struct BuddyGroupView: View {
         .shadow(color: Color.black.opacity(0.05), radius: 8, x: 0, y: 2)
     }
     
+    // MARK: - Feed Entry Card
+    
+    private var feedEntryCard: some View {
+        Button(action: { showFeed = true }) {
+            HStack(spacing: 12) {
+                ZStack {
+                    Circle()
+                        .fill(AppColors.secondary.opacity(0.15))
+                        .frame(width: 44, height: 44)
+                    Image(systemName: "dot.radiowaves.left.and.right")
+                        .font(.title3)
+                        .foregroundColor(AppColors.secondary)
+                }
+                
+                VStack(alignment: .leading, spacing: 4) {
+                    Text("揪團動態")
+                        .font(.subheadline)
+                        .fontWeight(.medium)
+                        .foregroundColor(AppColors.textPrimary)
+                    Text("看看夥伴們的最新動態")
+                        .font(.caption)
+                        .foregroundColor(AppColors.textSecondary)
+                }
+                
+                Spacer()
+                
+                Image(systemName: "chevron.right")
+                    .foregroundColor(AppColors.textSecondary)
+                    .font(.caption)
+            }
+            .padding()
+            .background(AppColors.cardBackground)
+            .cornerRadius(16)
+            .shadow(color: Color.black.opacity(0.04), radius: 4, x: 0, y: 2)
+        }
+    }
+
     // MARK: - Buddy Section
     
     private var buddySection: some View {
@@ -212,6 +268,9 @@ struct BuddyGroupView: View {
             if let group = viewModel.group {
                 ForEach(group.buddies) { buddy in
                     BuddyCardView(buddy: buddy)
+                        .onTapGesture {
+                            showChatPartner = buddy
+                        }
                 }
             }
         }

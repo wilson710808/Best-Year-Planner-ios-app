@@ -1,5 +1,5 @@
 # Best Year Planner - 開發狀態追蹤
-更新時間: 2026-05-06 12:50
+更新時間: 2026-05-08 08:40
 
 ---
 
@@ -7,18 +7,17 @@
 
 | 項目 | 值 |
 |------|-----|
-| 最新 Commit | e06be3f |
-| Swift 文件數 | 139 |
-| 總代碼行數 | 26,901 |
+| 最新 Commit | 待提交 |
+| Swift 文件數 | 142 |
 | 架構 | MVVM + ServiceLocator |
 | 最低版本 | iOS 16.0+ |
 
 ---
 
-## ✅ 已完成功能
+## ✅ 已完成功能 (32/32, 100%)
 
 ### 核心功能
-- [x] 7天啟動 → 21天挑戰挑戰系統
+- [x] 7天啟動 → 21天挑戰系統
 - [x] AI Gateway 整合 (herelai.fun)
 - [x] ServiceLocator 依賴注入
 - [x] AIProvider 協議
@@ -26,12 +25,32 @@
 - [x] Dark Mode
 
 ### AI 功能
-- [x] AI 教練對話
-- [x] AI 夥伴揪團成長
+- [x] AI 教練對話 (4風格 + 情境感知 + 挫折模式)
+- [x] AI 夥伴揪團成長 (4角色人格)
 - [x] SMARTER 目標評分器
 - [x] 信念轉化 Prompt 系統 (296行)
 - [x] 每日 AI Tip
-- [x] 週/月復盤
+- [x] 週/月 AI 洞察報告
+- [x] AI 任務生成
+
+### 🆕 夥伴角色系統 (2026-05-08 新增)
+- [x] BuddyRole 枚舉（同行者/過來人/新手/教練）
+- [x] 角色系統 Prompt（4種獨立人格）
+- [x] 角色互動風格定義
+- [x] 揪團動態消息流 (BuddyFeedView)
+- [x] 夥伴私聊角色人格對話
+- [x] 夥伴動態貼文類型（打卡/分享/鼓勵/里程碑/提問/反思/卡關）
+- [x] 夥伴掉鏈子系統
+
+### 🆕 信念系統強化 (2026-05-08 新增)
+- [x] 10條常見限制性信念勾選清單
+- [x] AI 即時賦能回應
+- [x] 信念審計4步引導（勾選→識別→反轉→行動承諾）
+
+### 🆕 進度視覺化 (2026-05-08 新增)
+- [x] 挑戰進度環形圖 (ChallengeProgressRingView)
+- [x] 雙環視圖 (DualChallengeRingView)
+- [x] 三循環標記（基礎→深化→內化）
 
 ### 數據層
 - [x] SQLite 本地存儲
@@ -40,6 +59,7 @@
 
 ### 書籍核心概念強化
 - [x] 信念轉化系統 (296行 Prompt)
+- [x] 限制性信念清單 + AI賦能回應 (10條勾選)
 - [x] 信念追蹤持久化 (BeliefRecord + CRUD)
 - [x] 總結過去 (PastReviewView 4步引導)
 - [x] SMARTER 評分器 (7維度雷達圖)
@@ -55,17 +75,14 @@
 - [x] 補卡機制 (MakeUpCheckIn + 反思)
 - [x] 無干擾模式 (FocusModeView)
 - [x] 完成慶祝動畫 (CheckInCelebrationOverlay)
-
-### AI 體驗優化
-- [x] 教練風格選擇 (4種：嚴格/溫暖/理性/幽默)
-- [x] 情境感知回應 (週一/週五/連續打卡)
-- [x] 挫折模式自動切換 (連續3天未打卡→鼓勵)
-- [x] 每日 AI Tip (快取機制)
+- [x] 目標上限提醒 (GoalLimitWarningView)
+- [x] 動機耗盡提醒 (CheckInService + DashboardView)
 
 ### 數據呈現
 - [x] 習慣熱力圖 (HabitHeatmapView)
 - [x] 能量曲線 (EnergyCurveView)
 - [x] 進階數據分析 (AdvancedAnalyticsView)
+- [x] 挑戰進度環形圖 (ChallengeProgressRingView)
 
 ### 測試
 - [x] 單元測試 (662行)
@@ -74,59 +91,25 @@
 
 ---
 
-## 🔄 ABCD 任務進度
+## 🆕 本次更新 (2026-05-08)
 
-### Task A: 上架前修復
-| 項目 | 狀態 | 說明 |
-|------|------|------|
-| AIService AIProvider 實現 | ✅ | 確認符合協議 |
-| ViewModels ServiceLocator | ✅ | 4個 ViewModel 使用 |
-| Database 表結構 | ✅ | 15+ 表完整 |
-| DEV_STATUS.md | ✅ | 本文件 |
-| 移除 AICoachViewModel 直接引用 | ✅ | commit 4aa4589 |
+### 新增文件
+| 文件 | 說明 |
+|------|------|
+| `Models/BuddyRole.swift` | 夥伴角色定義 + 動態消息模型 |
+| `Views/Buddy/BuddyFeedView.swift` | 揪團動態消息流 |
+| `Views/Challenge/ChallengeProgressRingView.swift` | 挑戰進度環形圖 |
 
-### Task B: SMARTER 評分器
-| 項目 | 狀態 | 說明 |
-|------|------|------|
-| SMARTERScore 模型 | ✅ | 已存在 |
-| SMARTERScorerView | ✅ | 完整 UI |
-| SMARTERRadarChart | ✅ | 7維度雷達圖 |
-| SMARTERHistoryView | ✅ | 歷史對比 + 趨勢圖 |
-| Operator bug 修復 | ✅ | precedence fix |
-| AI 建議生成 | ✅ | 已整合 |
-
-### Task C: 一鍵打卡
-| 項目 | 狀態 | 說明 |
-|------|------|------|
-| CheckInService | ✅ | 核心邏輯完整 |
-| batchCheckIn | ✅ | 批量打卡方法 |
-| QuickCheckInSection | ✅ | Dashboard 快捷入口 |
-| 一鍵全部打卡按鈕 | ✅ | 已實現 |
-| 完成慶祝動畫 | ✅ | CheckInCelebrationOverlay |
-
-### Task D: 信念轉化系統
-| 項目 | 狀態 | 說明 |
-|------|------|------|
-| BeliefRecord 模型 | ✅ | 6種類別 + 4種狀態 |
-| BeliefTrackerView | ✅ | 完整 CRUD UI |
-| SQLite belief_records 表 | ✅ | v3 migration |
-| GoalEnhancementService CRUD | ✅ | 已整合 |
-| BeliefTransformationPrompts | ✅ | 296行 |
-| AI 教練整合 | ✅ | Prompt 已嵌入 |
-
----
-
-## ⏳ 待完成功能 (6項)
-
-### 🔴 P0 - 上架前必須
-1. **Xcode 實際編譯驗證** - 確保無語法錯誤
-2. **App Store 截圖製作** - 5張截圖 + 1張預覽視頻
-
-### 🟠 P1 - 功能完善
-3. **目標上限提醒** - 超過5個活躍目標時彈出警告
-4. **動機耗盡提醒** - 連續3天未打卡時顯示原始動機
-5. **「找到為什麼」挖掘** - 每個目標強制輸入3個為什麼
-6. **夥伴「掉鏈子」真實感** - AI夥伴偶爾也會錯過打卡
+### 修改文件
+| 文件 | 說明 |
+|------|------|
+| `Models/GrowthBuddy.swift` | 新增 role 屬性、更新預設群組生成 |
+| `Views/Buddy/BuddyGroupView.swift` | 新增動態入口、夥伴私聊連結 |
+| `Views/Buddy/BuddyCardView.swift` | 顯示角色標籤和互動風格 |
+| `Views/Community/AIPartnerView.swift` | 支援角色人格對話 |
+| `ViewModels/AIPartnerViewModel.swift` | 角色系統 Prompt 注入 |
+| `Views/CheckIn/BeliefAuditSheetView.swift` | 新增10條信念勾選清單步驟 |
+| `Views/Dashboard/DashboardView.swift` | 新增挑戰進度環形圖 |
 
 ---
 
@@ -143,6 +126,5 @@
 
 ## 🔧 技術債
 
-1. 移除 AICoachViewModel 中的 `aiService` 直接引用
-2. 為 LimitingBelief 添加持久化支持
-3. 添加 Dashboard 一鍵打卡按鈕
+1. Xcode 實際編譯驗證
+2. App Store 截圖製作

@@ -9,6 +9,7 @@ final class AIPartnerViewModel: ObservableObject {
     @Published var isLoading: Bool = false
     @Published var welcomeMessage: String = ""
     @Published var partnerName: String = ""
+    @Published var buddyRole: BuddyRole = .companion
     @Published var errorMessage: String?
 
     private let authService = AuthService.shared
@@ -22,9 +23,10 @@ final class AIPartnerViewModel: ObservableObject {
         ServiceLocator.shared.aiProvider
     }
 
-    /// 初始化伙伴名称
-    init(partnerName: String = "小夥伴") {
+    /// 初始化伙伴名称和角色
+    init(partnerName: String = "小夥伴", buddyRole: BuddyRole = .companion) {
         self.partnerName = partnerName
+        self.buddyRole = buddyRole
     }
 
     /// 加载个性化欢迎消息
@@ -48,15 +50,19 @@ final class AIPartnerViewModel: ObservableObject {
 
             // 从 AI Gateway 获取个性化欢迎消息
             logger.info("Fetching welcome message from AI Gateway...")
+            let rolePrompt = buddyRole.systemPrompt
             let personalizedWelcome = await aiProvider.query(
                 userId: currentUser.id,
                 partnerName: partnerName,
                 userData: userData
             )
             
+            // 根據角色生成個性化歡迎訊息
+            let roleBasedWelcome = "\(buddyRole.emoji) \(personalizedWelcome)"
+            
             logger.info("Received welcome message: \(personalizedWelcome)")
 
-            welcomeMessage = personalizedWelcome
+            welcomeMessage = roleBasedWelcome
             let welcome = AIMessage(content: welcomeMessage, isFromUser: false)
             messages.append(welcome)
         }
@@ -93,10 +99,14 @@ final class AIPartnerViewModel: ObservableObject {
         
         logger.info("Generating response for user: \(currentUser.id), query: \(userInput)")
 
+        // 根據角色注入系統 Prompt
+        let rolePrompt = buddyRole.systemPrompt
+        let contextAwareQuery = "[角色設定：\(rolePrompt)] \(userInput)"
+        
         // 调用 AI Gateway API 获取回复
         let response = await aiProvider.getPartnerResponse(
             userId: currentUser.id,
-            query: userInput,
+            query: contextAwareQuery,
             partnerName: partnerName,
             conversationHistory: messages
         )

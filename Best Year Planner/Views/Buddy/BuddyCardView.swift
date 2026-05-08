@@ -22,13 +22,30 @@ struct BuddyCardView: View {
                 }
                 
                 VStack(alignment: .leading, spacing: 4) {
-                    Text(buddy.name)
-                        .font(.headline)
-                        .foregroundColor(AppColors.textPrimary)
+                    HStack(spacing: 6) {
+                        Text(buddy.name)
+                            .font(.headline)
+                            .foregroundColor(AppColors.textPrimary)
+                        Text(buddy.role.emoji)
+                            .font(.caption)
+                        Text(buddy.role.displayName)
+                            .font(.caption2)
+                            .fontWeight(.medium)
+                            .foregroundColor(roleColor)
+                            .padding(.horizontal, 6)
+                            .padding(.vertical, 2)
+                            .background(roleColor.opacity(0.15))
+                            .cornerRadius(6)
+                    }
                     
                     Text(buddy.statusText)
                         .font(.caption)
                         .foregroundColor(statusColor)
+                    
+                    Text(buddy.role.interactionStyle)
+                        .font(.caption2)
+                        .foregroundColor(AppColors.textSecondary)
+                        .italic()
                 }
                 
                 Spacer()
@@ -174,11 +191,20 @@ struct BuddyCardView: View {
     }
     
     private var avatarColor: Color {
-        switch buddy.status {
-        case .justStarted: return .orange
-        case .inProgress: return .red
-        case .completed: return .green
-        case .notStarted: return .gray
+        switch buddy.role {
+        case .companion: return .orange
+        case .veteran: return .yellow
+        case .beginner: return .green
+        case .coach: return .purple
+        }
+    }
+    
+    private var roleColor: Color {
+        switch buddy.role {
+        case .companion: return .orange
+        case .veteran: return .yellow
+        case .beginner: return .green
+        case .coach: return .purple
         }
     }
     

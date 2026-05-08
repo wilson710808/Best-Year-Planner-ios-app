@@ -64,8 +64,16 @@ struct DashboardView: View {
                         .padding(.horizontal)
                     }
 
-                    // Active Challenge Card
+                    // Active Challenge Card with Progress Ring
                     if let challenge = challengeViewModel.currentChallenge {
+                        // 挑戰進度環形圖
+                        ChallengeProgressRingView(
+                            currentDay: challenge.currentDayNumber,
+                            totalDays: challenge.totalDays,
+                            phase: challenge.phase
+                        )
+                        .padding(.horizontal)
+                        
                         ChallengeCardView(
                             challenge: challenge,
                             todayTask: challengeViewModel.todayTask,

@@ -1,8 +1,12 @@
 import SwiftUI
 
 struct AIPartnerView: View {
-    @StateObject private var viewModel = AIPartnerViewModel(partnerName: "小夥伴")
+    @StateObject private var viewModel: AIPartnerViewModel
     @Environment(\.dismiss) private var dismiss
+    
+    init(partnerName: String = "小夥伴", buddyRole: BuddyRole = .companion) {
+        _viewModel = StateObject(wrappedValue: AIPartnerViewModel(partnerName: partnerName, buddyRole: buddyRole))
+    }
 
     var body: some View {
         NavigationStack {
@@ -53,7 +57,7 @@ struct AIPartnerView: View {
                 .background(AppColors.cardBackground)
             }
             .background(AppColors.background.ignoresSafeArea())
-            .navigationTitle("AI夥伴 \(viewModel.partnerName)")
+            .navigationTitle("\(viewModel.buddyRole.emoji) \(viewModel.partnerName)")
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {
                 ToolbarItem(placement: .navigationBarLeading) {
